@@ -1,6 +1,6 @@
 {
   "extends": ["@tsconfig/node22", "@tsconfig/strictest"],
-  "include": ["./global.d.ts", "../src/**/*"],
+  "include": ["./global.d.ts", "../benchmarks/**/*", "../src/**/*"],
   "compilerOptions": {
     "types": ["node"],
     "lib": ["DOM", "ESNext"],

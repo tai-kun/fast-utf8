@@ -31,6 +31,15 @@ run = [
   "npx tsc --noEmit --project ./.config/tsconfig.config.json",
 ]
 
+[tasks.bench]
+run = [{ task = "bench:server" }, { task = "bench:client" }]
+
+[tasks."bench:server"]
+run = "npx vitest bench --config ./.config/vitest.server.ts --run"
+
+[tasks."bench:client"]
+run = "npx vitest bench --config ./.config/vitest.client.ts --run"
+
 [tasks.fmt]
 run = "npx oxfmt --config ./.config/.oxfmtrc.json"
 
