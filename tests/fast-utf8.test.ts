@@ -43,7 +43,7 @@ describe("decode", () => {
 
   test("BOM 付きのバイト列を ignoreBOM 有効でデコードしたとき、BOM が除去される", ({ expect }) => {
     // Arrange
-    const fastUtf8 = new FastUtf8({ decoder: { ignoreBOM: true } });
+    const fastUtf8 = new FastUtf8({ ignoreBOM: true });
     const input = new Uint8Array([0xef, 0xbb, 0xbf, 0x61]);
 
     // Act
@@ -53,9 +53,9 @@ describe("decode", () => {
     expect(result).toBe("\uFEFFa");
   });
 
-  test("不正なシーケンスを fatal 有効でデコードしたとき、例外を投げる", ({ expect }) => {
+  test("不正なシーケンスを strict 有効でデコードしたとき、例外を投げる", ({ expect }) => {
     // Arrange
-    const fastUtf8 = new FastUtf8({ decoder: { fatal: true } });
+    const fastUtf8 = new FastUtf8({ strict: true });
     const input = new Uint8Array([0xff]);
 
     // Act & Assert
@@ -110,9 +110,11 @@ describe("encode", () => {
     expect(result).toStrictEqual(new TextEncoder().encode("long-string"));
   });
 
-  test("不正なサロゲートペアを含む文字列をエンコードしたとき、例外を投げる", ({ expect }) => {
+  test("厳格モードで不正なサロゲートペアを含む文字列をエンコードしたとき、例外を投げる", ({
+    expect,
+  }) => {
     // Arrange
-    const fastUtf8 = new FastUtf8();
+    const fastUtf8 = new FastUtf8({ strict: true });
     const input = "\uD800";
 
     // Act & Assert
@@ -264,7 +266,7 @@ describe("外部キャッシュとの連携", () => {
       set: vi.fn<(key: any, value: any) => void>(),
       clear: vi.fn<() => void>(),
     };
-    const fastUtf8 = new FastUtf8({ caching: true, encodeCacheMap: mockCache });
+    const fastUtf8 = new FastUtf8({ caching: true, cacheMap: mockCache });
     const input = "external";
 
     // Act
