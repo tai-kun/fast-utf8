@@ -24,7 +24,7 @@ export type EncodeIntoResult = ReturnType<TextEncoder["encodeInto"]>;
 /**
  * エンコード結果をキャッシュするためのマップインターフェースです。
  */
-export interface IEncodeCacheMap {
+export interface ICacheMap {
   /**
    * キーに対応するエンコード済みのデータを取得します。
    *
@@ -35,6 +35,7 @@ export interface IEncodeCacheMap {
 
   /**
    * エンコード済みのデータをキャッシュに保存します。
+   *
    * @param text キーとなる文字列です。
    * @param data 保存するエンコード済みデータです。
    */
@@ -47,43 +48,57 @@ export interface IEncodeCacheMap {
 }
 
 /**
- * TextDecoder の初期化オプションの型定義です。
- */
-export type TextDecoderOptions = {
-  /**
-   * 不正なバイト列に遭遇した際にエラーを投げるかどうかを指定します。
-   */
-  readonly fatal?: boolean | undefined;
-
-  /**
-   * バイトオーダーマーク（BOM）を無視するかどうかを指定します。
-   */
-  readonly ignoreBOM?: boolean | undefined;
-};
-
-/**
  * {@link FastUtf8} クラスのコンストラクターに渡すオプションの型定義です。
  */
 export type FastUtf8Options = {
-  /**
-   * 内部で使用するバッファーのサイズ（バイト単位）です。
-   */
-  readonly bufferSize?: number | undefined;
+  // -----------------------------------------------------------------------------------------------
+  //
+  // 挙動変更オプション
+  //
+  // -----------------------------------------------------------------------------------------------
 
   /**
-   * デコーダーの設定オプションです。
+   * 厳格モードを有効にするかどうかを指定します。
+   *
+   * 有効な場合、不正な形式の入力に対してエラーを投げます。
+   *
+   * @default false
    */
-  readonly decoder?: TextDecoderOptions | undefined;
+  readonly strict?: boolean | undefined;
+
+  /**
+   * バイトオーダーマーク（BOM）を無視するかどうかを指定します。
+   *
+   * @default false
+   */
+  readonly ignoreBOM?: boolean | undefined;
+
+  // -----------------------------------------------------------------------------------------------
+  //
+  // 最適化オプション
+  //
+  // -----------------------------------------------------------------------------------------------
 
   /**
    * エンコード結果のキャッシュを有効にするかどうかを指定します。
+   *
+   * @default true
    */
   readonly caching?: boolean | undefined;
 
   /**
    * カスタムのキャッシュマップ実装を提供する場合に使用します。
+   *
+   * @default LatestOneCacheMap
    */
-  readonly encodeCacheMap?: IEncodeCacheMap | undefined;
+  readonly cacheMap?: ICacheMap | undefined;
+
+  /**
+   * 内部で使用するバッファーのサイズ（バイト単位）です。
+   *
+   * @default 1024
+   */
+  readonly bufferSize?: number | undefined;
 };
 
 /**
@@ -93,39 +108,49 @@ export type FastUtf8Options = {
  */
 export default class FastUtf8 {
   /**
-   * キャッシュ機能が有効かどうかを保持します。
+   * 厳格モードが有効かどうかを保持するフラグです。
+   */
+  private readonly strict: boolean;
+
+  /**
+   * キャッシュ機能が有効かどうかを保持するフラグです。
    */
   private caching: boolean;
 
   /**
    * エンコード結果を保持するキャッシュマップです。
    */
-  private readonly eCacheMap: IEncodeCacheMap;
+  private readonly cacheMap: ICacheMap;
 
   /**
    * 内部バッファーを遅延初期化して取得する関数です。
    */
-  private readonly getBuffer: () => Uint8Array<ArrayBuffer>;
+  private _buffer: () => Uint8Array<ArrayBuffer>;
 
   /**
-   * メインの TextDecoder インスタンスを遅延初期化して取得する関数です。
+   * TextDecoder の decode メソッドへの参照です。
    */
-  private readonly getDecoder: () => TextDecoder;
+  private _decode: TextDecoder["decode"];
 
   /**
-   * TextEncoder インスタンスを遅延初期化して取得する関数です。
+   * TextEncoder の encode メソッドへの参照です。
    */
-  private readonly getEncoder: () => TextEncoder;
+  private _encode: TextEncoder["encode"];
 
   /**
-   * バリデーション用の TextDecoder インスタンス（fatal: true 固定）を取得する関数です。
+   * TextEncoder の encodeInto メソッドへの参照です。
    */
-  private readonly getV8nDecoder: () => TextDecoder;
+  private _encodeInto: TextEncoder["encodeInto"];
+
+  /**
+   * 常にエラーを投げる設定（fatal: true）にされたデコード関数です。
+   */
+  private _decodeFatal: TextDecoder["decode"];
 
   /**
    * 事前確保したバッファーを安全に使用できる最大文字数です。
    */
-  private readonly safeBufferSize: number;
+  private readonly safeStringLength: number;
 
   /**
    * インスタンスを初期化します。
@@ -134,44 +159,65 @@ export default class FastUtf8 {
    */
   public constructor(options: FastUtf8Options = {}) {
     const {
-      caching = false,
-      decoder: { fatal = false, ignoreBOM = false } = {},
+      strict = false,
+      caching = true,
+      cacheMap = new LatestOneCacheMap(),
+      ignoreBOM = false,
       bufferSize = DEFAULT_BUFFER_SIZE,
-      encodeCacheMap = new LatestOneCacheMap(),
     } = options;
 
-    // 各リソースは必要になるまで生成されないよう、クロージャー内で管理されます。
-    let buffer: Uint8Array<ArrayBuffer> | undefined;
-    let decoder: TextDecoder | undefined;
-    let encoder: TextEncoder | undefined;
-    let v8nDecoder: TextDecoder | undefined;
+    this.strict = strict;
 
     this.caching = caching;
-    this.eCacheMap = encodeCacheMap;
-    this.getBuffer = () => (buffer ||= new Uint8Array(bufferSize));
-    this.getDecoder = () => (decoder ||= new TextDecoder("utf-8", { fatal, ignoreBOM }));
-    this.getEncoder = () => (encoder ||= new TextEncoder());
-    // メインデコーダーが既に fatal: true であればそれを再利用し、そうでなければバリデーション用に別途作成します。
-    this.getV8nDecoder = fatal
-      ? this.getDecoder
-      : () => (v8nDecoder ||= new TextDecoder("utf-8", { fatal: true, ignoreBOM }));
+    this.cacheMap = cacheMap;
+
+    this._buffer = () => {
+      const buffer = new Uint8Array(bufferSize);
+      this._buffer = () => buffer;
+      return this._buffer();
+    };
+
+    this._decode = (input, options) => {
+      const decoder = new TextDecoder("utf-8", { fatal: strict, ignoreBOM });
+      this._decode = decoder.decode.bind(decoder);
+      return this._decode(input, options);
+    };
+    this._decodeFatal = strict
+      ? this._decode
+      : (input) => {
+          const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM });
+          this._decodeFatal = decoder.decode.bind(decoder);
+          return this._decodeFatal(input);
+        };
+
+    this._encode = (input) => {
+      const encoder = new TextEncoder();
+      this._encode = encoder.encode.bind(encoder);
+      this._encodeInto = encoder.encodeInto.bind(encoder);
+      return this._encode(input);
+    };
+    this._encodeInto = (source, destination) => {
+      const encoder = new TextEncoder();
+      this._encode = encoder.encode.bind(encoder);
+      this._encodeInto = encoder.encodeInto.bind(encoder);
+      return this._encodeInto(source, destination);
+    };
+
     // エンコード後の配列の長さが元の文字列の長さの 3 倍を超えることは理論上ありません。
     // そのため、bufferSize / 3 以下の長さの文字列であれば、必ず bufferSize 内に収まると保証されます。
     // 参考: https://developer.mozilla.org/docs/Web/API/TextEncoder/encodeInto
-    this.safeBufferSize = Math.floor(bufferSize / 3);
+    this.safeStringLength = Math.floor(bufferSize / 3);
   }
 
   /**
    * バイト列を文字列にデコードします。
    *
    * @param input デコード対象のバイト列です。
+   * @param options デコードオプションです。
    * @returns デコードされた文字列です。
    */
-  public decode(input: DecodeInput): string {
-    const decoder = this.getDecoder();
-    const decoded = decoder.decode(input);
-
-    return decoded;
+  public decode(input: DecodeInput, options?: TextDecodeOptions): string {
+    return this._decode(input, options);
   }
 
   /**
@@ -184,32 +230,33 @@ export default class FastUtf8 {
    */
   public encode(input: string): Uint8Array<ArrayBuffer> {
     if (this.caching) {
-      const encoded = this.eCacheMap.get(input);
-      if (encoded != null) {
+      const cache = this.cacheMap.get(input);
+      if (cache != null) {
         // 呼び出し側での変更がキャッシュに影響しないよう、コピーを返します。
-        return encoded.slice();
+        return cache.slice();
       }
     }
 
-    assertWellFormed(input);
+    if (this.strict) {
+      assertWellFormed(input);
+    }
 
-    const encoder = this.getEncoder();
     let encoded: Uint8Array<ArrayBuffer>;
 
-    if (input.length <= this.safeBufferSize) {
+    if (input.length <= this.safeStringLength) {
       // 文字列が十分短い場合、再利用可能な内部バッファーを使用してヒープアロケーションを削減します。
-      const tmpDest = this.getBuffer();
-      const result = encoder.encodeInto(input, tmpDest);
+      const tmpDest = this._buffer();
+      const result = this._encodeInto(input, tmpDest);
       encoded = tmpDest.slice(0, result.written);
     } else {
       // 文字列が長い場合は、標準の encode メソッドを使用して、適切なサイズのバッファーを新規に割り当てます。
-      encoded = encoder.encode(input);
+      encoded = this._encode(input);
     }
 
     if (this.caching) {
       // 保存時にもコピーを作成し、外部からの変更からキャッシュを保護します。
-      const copied = encoded.slice();
-      this.eCacheMap.set(input, copied);
+      const cache = encoded.slice();
+      this.cacheMap.set(input, cache);
     }
 
     return encoded;
@@ -223,12 +270,11 @@ export default class FastUtf8 {
    * @returns エンコードの結果（書き込まれたバイト数など）です。
    */
   public encodeInto(source: string, destination: Uint8Array): EncodeIntoResult {
-    assertWellFormed(source);
+    if (this.strict) {
+      assertWellFormed(source);
+    }
 
-    const encoder = this.getEncoder();
-    const result = encoder.encodeInto(source, destination);
-
-    return result;
+    return this._encodeInto(source, destination);
   }
 
   /**
@@ -242,9 +288,8 @@ export default class FastUtf8 {
       return isWellFormed(input);
     }
 
-    const decoder = this.getV8nDecoder();
     try {
-      decoder.decode(input); // 不正な UTF-8 でエラーが投げられます。
+      this._decodeFatal(input); // 不正な UTF-8 でエラーが投げられます。
       return true;
     } catch {
       return false;
@@ -255,7 +300,7 @@ export default class FastUtf8 {
    * 現在保持されているエンコードキャッシュをすべてクリアします。
    */
   public clearCache(): void {
-    this.eCacheMap.clear();
+    this.cacheMap.clear();
   }
 
   /**

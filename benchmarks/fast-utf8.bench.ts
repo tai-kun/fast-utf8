@@ -56,14 +56,3 @@ describe("4. decode", () => {
     fastUtf8.decode(encodedBytes);
   });
 });
-
-// 検証
-describe("5. isValidUtf8", () => {
-  bench("String", () => {
-    fastUtf8.isValidUtf8(shortText);
-  });
-
-  bench("Bytes", () => {
-    fastUtf8.isValidUtf8(encodedBytes);
-  });
-});
