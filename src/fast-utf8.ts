@@ -324,7 +324,7 @@ export default class FastUtf8 {
       const tmpDst = this._buffer();
 
       const result = this._encodeInto(input, tmpDst);
-      encoded = tmpDst.slice(0, result.written);
+      encoded = tmpDst.subarray(0, result.written);
     } else {
       // 文字列が長い場合は、標準の encode メソッドを使用して、適切なサイズのバッファーを新規に割り当てます。
       encoded = this._encode(input);
@@ -335,9 +335,11 @@ export default class FastUtf8 {
     }
 
     if (this.caching) {
-      // encoded に破壊的な変更を加えないため、コピーを作成する必要はありません。
+      // コピーを作成し、外部からの変更からキャッシュを保護します。同時に ArrayBufferLike を ArrayBuffer にします。
+      const cache = encoded.slice();
+
       try {
-        this.cacheMap.set(input, encoded);
+        this.cacheMap.set(input, cache);
       } catch {}
     }
 
