@@ -76,6 +76,10 @@ const utf8 = new FastUtf8({
 
 既存のバッファに直接エンコード結果を書き込みます。
 
+### `countBytes(text: string): number`
+
+文字列のバイト数をカウントします。
+
 ### `isValidUtf8(input: string | DecodeInput): boolean`
 
 入力が正当な UTF-8（または UTF-16 文字列）であるかを判定します。
