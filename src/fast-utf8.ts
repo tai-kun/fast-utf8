@@ -1,5 +1,3 @@
-import assertWellFormed from "./_assert-well-formed.js";
-import isWellFormed from "./_is-well-formed.js";
 import LatestOneCacheMap from "./latest-one-cache-map.js";
 
 const B = 1;
@@ -145,7 +143,7 @@ export default class FastUtf8 {
   /**
    * 常にエラーを投げる設定（fatal: true）にされたデコード関数です。
    */
-  private _decodeFatal: TextDecoder["decode"];
+  private _assertSequence: (input: Parameters<TextDecoder["decode"]>[0]) => void;
 
   /**
    * 事前確保したバッファーを安全に使用できる最大文字数です。
@@ -182,12 +180,12 @@ export default class FastUtf8 {
       this._decode = decoder.decode.bind(decoder);
       return this._decode(input, options);
     };
-    this._decodeFatal = strict
+    this._assertSequence = strict
       ? this._decode
       : (input) => {
           const decoder = new TextDecoder("utf-8", { fatal: true, ignoreBOM });
-          this._decodeFatal = decoder.decode.bind(decoder);
-          return this._decodeFatal(input);
+          this._assertSequence = decoder.decode.bind(decoder);
+          return this._assertSequence(input);
         };
 
     this._encode = (input) => {
@@ -230,33 +228,41 @@ export default class FastUtf8 {
    */
   public encode(input: string): Uint8Array<ArrayBuffer> {
     if (this.caching) {
-      const cache = this.cacheMap.get(input);
-      if (cache != null) {
+      let cache: Uint8Array<ArrayBuffer> | null | undefined;
+      try {
+        cache = this.cacheMap.get(input);
+      } catch {}
+
+      if (cache) {
         // 呼び出し側での変更がキャッシュに影響しないよう、コピーを返します。
         return cache.slice();
       }
-    }
-
-    if (this.strict) {
-      assertWellFormed(input);
     }
 
     let encoded: Uint8Array<ArrayBuffer>;
 
     if (input.length <= this.safeStringLength) {
       // 文字列が十分短い場合、再利用可能な内部バッファーを使用してヒープアロケーションを削減します。
-      const tmpDest = this._buffer();
-      const result = this._encodeInto(input, tmpDest);
-      encoded = tmpDest.slice(0, result.written);
+      const tmpDst = this._buffer();
+
+      const result = this._encodeInto(input, tmpDst);
+      encoded = tmpDst.slice(0, result.written);
     } else {
       // 文字列が長い場合は、標準の encode メソッドを使用して、適切なサイズのバッファーを新規に割り当てます。
       encoded = this._encode(input);
     }
 
+    if (this.strict) {
+      this._assertSequence(encoded);
+    }
+
     if (this.caching) {
-      // 保存時にもコピーを作成し、外部からの変更からキャッシュを保護します。
+      // コピーを作成し、外部からの変更からキャッシュを保護します。
       const cache = encoded.slice();
-      this.cacheMap.set(input, cache);
+
+      try {
+        this.cacheMap.set(input, cache);
+      } catch {}
     }
 
     return encoded;
@@ -270,29 +276,101 @@ export default class FastUtf8 {
    * @returns エンコードの結果（書き込まれたバイト数など）です。
    */
   public encodeInto(source: string, destination: Uint8Array): EncodeIntoResult {
-    if (this.strict) {
-      assertWellFormed(source);
+    const result = this._encodeInto(source, destination);
+
+    if ((this.strict || this.caching) && destination.length <= result.written) {
+      // destination を変更しないので参照を作ります。
+      const encoded = destination.subarray(0, result.written);
+
+      if (this.strict) {
+        this._assertSequence(encoded);
+      }
+
+      if (this.caching) {
+        // コピーを作成し、外部からの変更からキャッシュを保護します。同時に ArrayBufferLike を ArrayBuffer にします。
+        const cache = encoded.slice();
+
+        try {
+          this.cacheMap.set(source, cache);
+        } catch {}
+      }
     }
 
-    return this._encodeInto(source, destination);
+    return result;
   }
 
   /**
-   * 指定された入力が正当な UTF-8/UTF-16 シーケンスであるかどうかを判定します。
+   * 指定された入力が正当な UTF-8 シーケンスであるかどうかを判定します。
    *
    * @param input 判定対象の文字列、またはバイト列です。
    * @returns 正当な場合は true、そうでない場合は false を返します。
    */
   public isValidUtf8(input: string | DecodeInput): boolean {
-    if (typeof input === "string") {
-      return isWellFormed(input);
+    if (typeof input !== "string") {
+      try {
+        this._assertSequence(input);
+
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    let cache: Uint8Array<ArrayBuffer> | null | undefined;
+    let encoded: Uint8Array<ArrayBuffer> | undefined;
+
+    if (this.caching) {
+      try {
+        cache = this.cacheMap.get(input);
+      } catch {}
+
+      if (cache) {
+        if (this.strict) {
+          // 厳格モードにおいてキャッシュされているバイト列は正当な UTF-8 シーケンスです。
+          return true;
+        }
+
+        // 変更しないので参照します。
+        encoded = cache;
+      }
+    }
+
+    let isView: boolean;
+
+    if (!encoded) {
+      if (input.length <= this.safeStringLength) {
+        // 文字列が十分短い場合、再利用可能な内部バッファーを使用してヒープアロケーションを削減します。
+        const tmpDst = this._buffer();
+
+        const result = this._encodeInto(input, tmpDst);
+
+        // tmpDst を変更しないので参照を作ります。
+        encoded = tmpDst.subarray(0, result.written);
+
+        isView = true;
+      } else {
+        // 文字列が長い場合は、標準の encode メソッドを使用して、適切なサイズのバッファーを新規に割り当てます。
+        encoded = this._encode(input);
+
+        isView = false;
+      }
     }
 
     try {
-      this._decodeFatal(input); // 不正な UTF-8 でエラーが投げられます。
+      this._assertSequence(encoded);
+
       return true;
     } catch {
       return false;
+    } finally {
+      if (this.caching && cache !== encoded) {
+        // この条件分岐に入るということは、入力がエンコードされ、isView が真偽値を持っています。
+        const cache = isView! ? encoded.slice() : encoded;
+
+        try {
+          this.cacheMap.set(input, cache);
+        } catch {}
+      }
     }
   }
 

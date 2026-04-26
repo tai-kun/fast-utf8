@@ -1,5 +1,6 @@
 [tools]
 node = "22"
+npm = "11.13.0"
 
 [tasks.test]
 run = [
@@ -45,15 +46,6 @@ run = "npx oxfmt --config ./.config/.oxfmtrc.json"
 
 [tasks.lint]
 run = "npx oxlint --config ./.config/.oxlintrc.json"
-
-[tasks."docs:dev"]
-run = "npx vitepress dev website"
-
-[tasks."docs:build"]
-run = "npx vitepress build website"
-
-[tasks."docs:preview"]
-run = "npx vitepress preview website"
 
 [tasks.update]
 run = [

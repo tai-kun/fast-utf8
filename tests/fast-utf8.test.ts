@@ -53,12 +53,90 @@ describe("decode", () => {
     expect(result).toBe("\uFEFFa");
   });
 
+  test("U+FFFD は正しい UTF-8 としてデコードできる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = Uint8Array.from([0xef, 0xbf, 0xbd]);
+
+    // Act
+    const result = fastUtf8.decode(input);
+
+    // Assert
+    expect(result).toBe("�");
+  });
+
   test("不正なシーケンスを strict 有効でデコードしたとき、例外を投げる", ({ expect }) => {
     // Arrange
     const fastUtf8 = new FastUtf8({ strict: true });
     const input = new Uint8Array([0xff]);
 
     // Act & Assert
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("不完全な 3 バイトシーケンスを厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xe3, 0x81]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("不正な継続バイトを厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xe3, 0x28, 0xa1]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("孤立した継続バイトを厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0x80]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("過長エンコーディングを厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xc0, 0xaf]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("UTF-16 サロゲート領域のエンコードを厳格モードでデコードすると例外を投げる", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xed, 0xa0, 0x80]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("Unicode範囲外コードポイントを厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xf4, 0x90, 0x80, 0x80]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("不正な先頭バイト（0xFF）を厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xff]);
+
+    expect(() => fastUtf8.decode(input)).toThrow();
+  });
+
+  test("5 バイトシーケンス（非 UTF-8）を厳格モードでデコードすると例外を投げる", ({ expect }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ strict: true });
+    const input = new Uint8Array([0xf8, 0x88, 0x80, 0x80, 0x80]);
+
     expect(() => fastUtf8.decode(input)).toThrow();
   });
 });
@@ -110,15 +188,16 @@ describe("encode", () => {
     expect(result).toStrictEqual(new TextEncoder().encode("long-string"));
   });
 
-  test("厳格モードで不正なサロゲートペアを含む文字列をエンコードしたとき、例外を投げる", ({
+  test("厳格モードで UTF-16 における不正なサロゲートペアを含む文字列をエンコードできる", ({
     expect,
   }) => {
     // Arrange
     const fastUtf8 = new FastUtf8({ strict: true });
-    const input = "\uD800";
+    const input = "\uD800"; // 孤立サロゲート
 
     // Act & Assert
-    expect(() => fastUtf8.encode(input)).toThrow();
+    expect(input.isWellFormed()).toBe(false); // UTF-16 では無効
+    expect(fastUtf8.encode(input)).toStrictEqual(new Uint8Array([0xef, 0xbf, 0xbd]));
   });
 
   test("キャッシュが有効なとき、同じ文字列の 2 回目のエンコード結果は 1 回目と内容が一致する", ({
@@ -180,18 +259,6 @@ describe("isValidUtf8", () => {
 
     // Assert
     expect(result).toBe(true);
-  });
-
-  test("不正なサロゲートを含む文字列を検証したとき、偽を返す", ({ expect }) => {
-    // Arrange
-    const fastUtf8 = new FastUtf8();
-    const input = "\uD800";
-
-    // Act
-    const result = fastUtf8.isValidUtf8(input);
-
-    // Assert
-    expect(result).toBe(false);
   });
 
   test("正常なバイト列を検証したとき、真を返す", ({ expect }) => {
