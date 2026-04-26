@@ -248,6 +248,138 @@ describe("encodeInto", () => {
   });
 });
 
+describe("countBytes", () => {
+  test("空文字を指定したとき、バイト数は 0 になる", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8();
+    const input = "";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(0);
+  });
+
+  test("ASCII 文字を指定したとき、正確なバイト数を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8();
+    const input = "abc";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(3);
+  });
+
+  test("2 バイトのマルチバイト文字を含むとき、正確なバイト数を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8();
+    const input = "αβγ";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(6);
+  });
+
+  test("3 バイトのマルチバイト文字（日本語）を含むとき、正確なバイト数を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8();
+    const input = "こんにちは";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(15);
+  });
+
+  test("サロゲートペア（4 バイト文字）を含むとき、正確なバイト数を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8();
+    const input = "𠮷野家";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    // "𠮷" (4bytes) + "野" (3bytes) + "家" (3bytes) = 10
+    expect(result).toBe(10);
+  });
+
+  test("文字列長が内部バッファーの安全圏（341 文字）を超過したとき、正常にフォールバックしてカウントできる", ({
+    expect,
+  }) => {
+    // Arrange
+    const sut = new FastUtf8({ bufferSize: 1024 });
+    const input = "a".repeat(342);
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(342);
+  });
+
+  test("同一文字列に対して複数回実行したとき、キャッシュが利用され同じ結果を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8({ caching: true });
+    const input = "cache_test";
+
+    // Act
+    const result1 = sut.countBytes(input);
+    const result2 = sut.countBytes(input);
+
+    // Assert
+    expect(result1).toBe(10);
+    expect(result2).toBe(10);
+  });
+
+  test("キャッシュが無効化されているとき、キャッシュを利用せずに計算結果を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8({ caching: false });
+    const input = "no_cache";
+
+    // Act
+    const result1 = sut.countBytes(input);
+    const result2 = sut.countBytes(input);
+
+    // Assert
+    expect(result1).toBe(8);
+    expect(result2).toBe(8);
+  });
+
+  test("厳格モードで入力が正常なとき、エラーを出さずにバイト数を返す", ({ expect }) => {
+    // Arrange
+    const sut = new FastUtf8({ strict: true });
+    const input = "Valid UTF-8";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    expect(result).toBe(11);
+  });
+
+  test("厳格モードで UTF-16 における不正なサロゲートペアが含まれるとき、置換文字としてカウントする", ({
+    expect,
+  }) => {
+    // Arrange
+    const sut = new FastUtf8({ strict: true });
+    const input = "\uD800";
+
+    // Act
+    const result = sut.countBytes(input);
+
+    // Assert
+    // 不正な文字は UTF-8 置換文字（U+FFFD: 3bytes）として処理される。
+    expect(result).toBe(3);
+  });
+});
+
 describe("isValidUtf8", () => {
   test("正常な文字列を検証したとき、真を返す", ({ expect }) => {
     // Arrange

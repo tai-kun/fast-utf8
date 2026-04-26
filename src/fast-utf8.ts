@@ -300,6 +300,51 @@ export default class FastUtf8 {
   }
 
   /**
+   * 文字列のバイト数をカウントします。
+   *
+   * @param input カウント対象の文字列です。
+   * @returns バイト数です。
+   */
+  public countBytes(input: string): number {
+    if (this.caching) {
+      let cache: Uint8Array<ArrayBuffer> | null | undefined;
+      try {
+        cache = this.cacheMap.get(input);
+      } catch {}
+
+      if (cache) {
+        return cache.length;
+      }
+    }
+
+    let encoded: Uint8Array<ArrayBuffer>;
+
+    if (input.length <= this.safeStringLength) {
+      // 文字列が十分短い場合、再利用可能な内部バッファーを使用してヒープアロケーションを削減します。
+      const tmpDst = this._buffer();
+
+      const result = this._encodeInto(input, tmpDst);
+      encoded = tmpDst.slice(0, result.written);
+    } else {
+      // 文字列が長い場合は、標準の encode メソッドを使用して、適切なサイズのバッファーを新規に割り当てます。
+      encoded = this._encode(input);
+    }
+
+    if (this.strict) {
+      this._assertSequence(encoded);
+    }
+
+    if (this.caching) {
+      // encoded に破壊的な変更を加えないため、コピーを作成する必要はありません。
+      try {
+        this.cacheMap.set(input, encoded);
+      } catch {}
+    }
+
+    return encoded.length;
+  }
+
+  /**
    * 指定された入力が正当な UTF-8 シーケンスであるかどうかを判定します。
    *
    * @param input 判定対象の文字列、またはバイト列です。
