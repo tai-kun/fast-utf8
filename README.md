@@ -112,9 +112,11 @@ const utf8 = new FastUtf8({ cacheMap: new MyCustomCacheMap() });
 
 ## ベンチマーク
 
-総評としては、Node.js（Bun、Deno は未測定）と Chromium、WebKit 環境でエンコードの高速化が見込めます。Firefox ではむしろパフォーマンスが悪化します。
+総評としては、Node.js と Bun、Chromium、WebKit 環境でエンコードの高速化が見込めます。Firefox ではむしろパフォーマンスが悪化します（Deno は未測定）。
 
-### Node.js (v22)
+WebKit 環境のパフォーマンス改善の程度は微々たるものなので、単純なエンコード/デコード処理に限って言えば、Chromium とサーバーサイドでは fast-utf8 を使い、それ以外ではネイティブ実装を使うのが良いと思います。
+
+### Node.js (v22.22.0)
 
 ```
  ✓ benchmarks/fast-utf8.bench.ts > 1. encode: Buffer reuse 3196ms
@@ -150,6 +152,44 @@ const utf8 = new FastUtf8({ cacheMap: new MyCustomCacheMap() });
 
   FastUtf8 - benchmarks/fast-utf8.bench.ts > 4. decode
     1.00x faster than Native
+```
+
+### Bun (v1.3.11)
+
+```
+ ✓ benchmarks/fast-utf8.bench.ts > 1. encode: Buffer reuse 3260ms
+     name                 hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · Native     3,021,333.81  0.0002  4.6097  0.0003  0.0003  0.0016  0.0023  0.0038  ±1.85%  1510667
+   · FastUtf8  10,355,740.65  0.0001  2.7143  0.0001  0.0001  0.0001  0.0002  0.0003  ±1.07%  5177871
+
+ ✓ benchmarks/fast-utf8.bench.ts > 2. encode: Cache Hit 4762ms
+     name                 hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · Native     2,956,037.31  0.0002  5.4771  0.0003  0.0003  0.0017  0.0024  0.0039  ±2.76%  1478024
+   · FastUtf8  19,175,413.27  0.0000  2.0087  0.0001  0.0001  0.0001  0.0001  0.0002  ±1.08%  9587707
+
+ ✓ benchmarks/fast-utf8.bench.ts > 3. encode: No Buffer 1301ms
+     name              hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · Native    271,527.77  0.0033  0.6273  0.0037  0.0035  0.0073  0.0082  0.0110  ±0.64%   135764
+   · FastUtf8  271,651.88  0.0033  0.4700  0.0037  0.0035  0.0070  0.0080  0.0112  ±0.61%   135826
+
+ ✓ benchmarks/fast-utf8.bench.ts > 4. decode 3230ms
+     name                hz     min     max    mean     p75     p99    p995    p999     rme  samples
+   · Native    6,624,852.03  0.0001  0.0248  0.0002  0.0002  0.0002  0.0002  0.0003  ±0.03%  3312427
+   · FastUtf8  6,922,159.02  0.0001  0.0258  0.0001  0.0001  0.0002  0.0002  0.0003  ±0.08%  3461080
+
+ BENCH  Summary
+
+  FastUtf8 - benchmarks/fast-utf8.bench.ts > 1. encode: Buffer reuse
+    3.43x faster than Native
+
+  FastUtf8 - benchmarks/fast-utf8.bench.ts > 2. encode: Cache Hit
+    6.49x faster than Native
+
+  FastUtf8 - benchmarks/fast-utf8.bench.ts > 3. encode: No Buffer
+    1.00x faster than Native
+
+  FastUtf8 - benchmarks/fast-utf8.bench.ts > 4. decode
+    1.04x faster than Native
 ```
 
 ### chromium

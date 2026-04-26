@@ -1,6 +1,7 @@
 [tools]
 node = "22"
 npm = "11.13.0"
+bun = "1"
 
 [tasks.test]
 run = [
