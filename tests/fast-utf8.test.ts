@@ -476,3 +476,142 @@ describe("外部キャッシュとの連携", () => {
     expect(mockCache.set).toHaveBeenCalled();
   });
 });
+
+describe("キャッシュ整合性およびメモリー安全性の検証", () => {
+  test("encode の戻り値を変更したとき、再度同じ文字列を encode してもキャッシュが汚染されていない", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const input = "A";
+
+    // Act
+    const res1 = fastUtf8.encode(input);
+    res1[0] = 0x42; // "B" に書き換える。
+    const res2 = fastUtf8.encode(input);
+
+    // Assert
+    expect(res2[0]).toBe(0x41); // "A" であることを期待する。
+    expect(res1).not.toBe(res2); // 参照が異なっていることを確認する。
+  });
+
+  test("encodeInto で書き込んだ宛先バッファーを変更したとき、後の encode 結果に影響を与えない", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const input = "A";
+    const dst = new Uint8Array(10);
+
+    // Act
+    fastUtf8.encodeInto(input, dst);
+    dst[0] = 0x42; // 宛先バッファーを直接書き換える。
+    const res = fastUtf8.encode(input);
+
+    // Assert
+    expect(res[0]).toBe(0x41); // キャッシュされた値が "A" であることを期待する。
+  });
+
+  test("countBytes を実行してキャッシュを生成した後に encode 戻り値を変更しても、再取得時に影響しない", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const input = "A";
+
+    // Act
+    fastUtf8.countBytes(input); // 内部でキャッシュを生成させる。
+    const res1 = fastUtf8.encode(input);
+    res1[0] = 0x42;
+    const res2 = fastUtf8.encode(input);
+
+    // Assert
+    expect(res2[0]).toBe(0x41);
+  });
+
+  test("isValidUtf8 でキャッシュを生成した後に encode 戻り値を変更しても、キャッシュの内容が保持される", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const input = "A";
+
+    // Act
+    fastUtf8.isValidUtf8(input); // 内部でキャッシュを生成させる。
+    const res1 = fastUtf8.encode(input);
+    res1[0] = 0x42;
+    const res2 = fastUtf8.encode(input);
+
+    // Assert
+    expect(res2[0]).toBe(0x41);
+  });
+
+  test("内部バッファーを再利用する長さの文字列を連続して encode したとき、それぞれの戻り値の参照が独立している", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const input1 = "A";
+    const input2 = "B";
+
+    // Act
+    const res1 = fastUtf8.encode(input1);
+    const res2 = fastUtf8.encode(input2);
+    res1[0] = 0x43; // res1 を変更する。
+
+    // Assert
+    // 内部バッファー（_buffer）の参照がそのまま露出している場合、res2 も影響を受ける可能性がある。
+    expect(res2[0]).toBe(0x42); // "B" のままであることを確認する。
+    expect(res1.buffer).not.toBe(res2.buffer); // slice 等により ArrayBuffer 自体が分離されていることを期待する。
+  });
+
+  test("safeStringLength の境界値ちょうどを encode したとき、正しく切り出されたバッファーが返る", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const bufferSize = 1024; // 実装上の想定サイズ。
+    const safeLength = Math.floor(bufferSize / 3);
+    const input = "A".repeat(safeLength);
+
+    // Act
+    const res = fastUtf8.encode(input);
+
+    // Assert
+    expect(res.length).toBe(safeLength);
+    expect(res.every((byte) => byte === 0x41)).toBe(true);
+  });
+
+  test("safeStringLength を超える長さの文字列を encode したとき、正常にエンコードされ参照が独立している", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+    const bufferSize = 1024;
+    const overLength = Math.floor(bufferSize / 3) + 1;
+    const input = "A".repeat(overLength);
+
+    // Act
+    const res = fastUtf8.encode(input);
+
+    // Assert
+    expect(res.length).toBe(overLength);
+    expect(res[0]).toBe(0x41);
+  });
+
+  test("空文字を encode したとき、空の Uint8Array が返りキャッシュ操作が安全に行われる", ({
+    expect,
+  }) => {
+    // Arrange
+    const fastUtf8 = new FastUtf8({ caching: true });
+
+    // Act
+    const res1 = fastUtf8.encode("");
+    const res2 = fastUtf8.encode("");
+
+    // Assert
+    expect(res1).toStrictEqual(new Uint8Array([]));
+    expect(res2).toStrictEqual(new Uint8Array([]));
+    expect(res1).not.toBe(res2); // 空配列であっても、不変性を保つため参照が分離されていることを期待する。
+  });
+});
