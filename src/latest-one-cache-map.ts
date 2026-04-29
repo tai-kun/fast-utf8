@@ -20,7 +20,7 @@ export default class LatestOneCacheMap {
   /**
    * このキャッシュインスタンスが許容する最大バイトサイズです。
    */
-  private maxCacheSize: number;
+  public maxCacheSize: number;
 
   /**
    * インスタンスを初期化します。
