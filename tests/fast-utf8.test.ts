@@ -158,15 +158,15 @@ describe("encode", () => {
     expect,
   }) => {
     // Arrange
-    const bufferSize = 1024;
-    const fastUtf8 = new FastUtf8({ bufferSize });
+    const allocateSize = 1024;
+    const fastUtf8 = new FastUtf8({ allocateSize });
     const input = "short";
 
     // Act
     const result = fastUtf8.encode(input);
 
     // Assert
-    // 内部バッファーを共有している場合、buffer 属性の byteLength は bufferSize と一致する。
+    // 内部バッファーを共有している場合、buffer 属性の byteLength は allocateSize と一致する。
     expect(result.buffer.byteLength).toBe(input.length);
     expect(result).toStrictEqual(new TextEncoder().encode("short"));
   });
@@ -175,8 +175,8 @@ describe("encode", () => {
     expect,
   }) => {
     // Arrange
-    const bufferSize = 2;
-    const fastUtf8 = new FastUtf8({ bufferSize });
+    const allocateSize = 2;
+    const fastUtf8 = new FastUtf8({ allocateSize });
     const input = "long-string";
 
     // Act
@@ -314,7 +314,7 @@ describe("countBytes", () => {
     expect,
   }) => {
     // Arrange
-    const sut = new FastUtf8({ bufferSize: 1024 });
+    const sut = new FastUtf8({ allocateSize: 1024 });
     const input = "a".repeat(342);
 
     // Act
@@ -570,8 +570,8 @@ describe("キャッシュ整合性およびメモリー安全性の検証", () =
   }) => {
     // Arrange
     const fastUtf8 = new FastUtf8({ caching: true });
-    const bufferSize = 1024; // 実装上の想定サイズ。
-    const safeLength = Math.floor(bufferSize / 3);
+    const allocateSize = 1024; // 実装上の想定サイズ。
+    const safeLength = Math.floor(allocateSize / 3);
     const input = "A".repeat(safeLength);
 
     // Act
@@ -587,8 +587,8 @@ describe("キャッシュ整合性およびメモリー安全性の検証", () =
   }) => {
     // Arrange
     const fastUtf8 = new FastUtf8({ caching: true });
-    const bufferSize = 1024;
-    const overLength = Math.floor(bufferSize / 3) + 1;
+    const allocateSize = 1024;
+    const overLength = Math.floor(allocateSize / 3) + 1;
     const input = "A".repeat(overLength);
 
     // Act

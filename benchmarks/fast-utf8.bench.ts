@@ -10,8 +10,8 @@ const encodedBytes = new TextEncoder().encode(shortText);
 // インスタンスの準備
 const nativeEncoder = new TextEncoder();
 const nativeDecoder = new TextDecoder();
-const fastUtf8 = new FastUtf8({ bufferSize: 1024, caching: false });
-const fastUtf8Cached = new FastUtf8({ bufferSize: 1024, caching: true });
+const fastUtf8 = new FastUtf8({ allocateSize: 1024, caching: false });
+const fastUtf8Cached = new FastUtf8({ allocateSize: 1024, caching: true });
 
 // バッファーを再利用するエンコード
 describe("1. encode: Buffer reuse", () => {

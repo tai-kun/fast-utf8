@@ -3,7 +3,7 @@ import LatestOneCacheMap from "./latest-one-cache-map.js";
 const B = 1;
 const KiB = 1024 * B;
 
-const DEFAULT_BUFFER_SIZE = 1 * KiB;
+const DEFAULT_ALLOCATE_SIZE = 1 * KiB;
 
 /**
  * デコード処理の入力型定義です。
@@ -96,7 +96,7 @@ export type FastUtf8Options = {
    *
    * @default 1024
    */
-  readonly bufferSize?: number | undefined;
+  readonly allocateSize?: number | undefined;
 };
 
 /**
@@ -161,7 +161,7 @@ export default class FastUtf8 {
       caching = true,
       cacheMap = new LatestOneCacheMap(),
       ignoreBOM = false,
-      bufferSize = DEFAULT_BUFFER_SIZE,
+      allocateSize = DEFAULT_ALLOCATE_SIZE,
     } = options;
 
     this.strict = strict;
@@ -170,7 +170,7 @@ export default class FastUtf8 {
     this.cacheMap = cacheMap;
 
     this._buffer = () => {
-      const buffer = new Uint8Array(bufferSize);
+      const buffer = new Uint8Array(allocateSize);
       this._buffer = () => buffer;
       return this._buffer();
     };
@@ -202,9 +202,9 @@ export default class FastUtf8 {
     };
 
     // エンコード後の配列の長さが元の文字列の長さの 3 倍を超えることは理論上ありません。
-    // そのため、bufferSize / 3 以下の長さの文字列であれば、必ず bufferSize 内に収まると保証されます。
+    // そのため、allocateSize / 3 以下の長さの文字列であれば、必ず allocateSize 内に収まると保証されます。
     // 参考: https://developer.mozilla.org/docs/Web/API/TextEncoder/encodeInto
-    this.safeStringLength = Math.floor(bufferSize / 3);
+    this.safeStringLength = Math.floor(allocateSize / 3);
   }
 
   /**
