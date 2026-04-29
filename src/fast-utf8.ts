@@ -24,6 +24,11 @@ export type EncodeIntoResult = ReturnType<TextEncoder["encodeInto"]>;
  */
 export interface ICacheMap {
   /**
+   * このキャッシュインスタンスが許容する最大バイトサイズです。
+   */
+  readonly maxCacheSize?: number;
+
+  /**
    * キーに対応するエンコード済みのデータを取得します。
    *
    * @param text 検索キーとなる文字列です。
@@ -256,7 +261,10 @@ export default class FastUtf8 {
       this._assertSequence(encoded);
     }
 
-    if (this.caching) {
+    if (
+      this.caching &&
+      (this.cacheMap.maxCacheSize === undefined || this.cacheMap.maxCacheSize >= encoded.length)
+    ) {
       // コピーを作成し、外部からの変更からキャッシュを保護します。
       const cache = encoded.slice();
 
@@ -286,7 +294,10 @@ export default class FastUtf8 {
         this._assertSequence(encoded);
       }
 
-      if (this.caching) {
+      if (
+        this.caching &&
+        (this.cacheMap.maxCacheSize === undefined || this.cacheMap.maxCacheSize >= encoded.length)
+      ) {
         // コピーを作成し、外部からの変更からキャッシュを保護します。同時に ArrayBufferLike を ArrayBuffer にします。
         const cache = encoded.slice();
 
@@ -334,7 +345,10 @@ export default class FastUtf8 {
       this._assertSequence(encoded);
     }
 
-    if (this.caching) {
+    if (
+      this.caching &&
+      (this.cacheMap.maxCacheSize === undefined || this.cacheMap.maxCacheSize >= encoded.length)
+    ) {
       // コピーを作成し、外部からの変更からキャッシュを保護します。同時に ArrayBufferLike を ArrayBuffer にします。
       const cache = encoded.slice();
 
@@ -410,7 +424,11 @@ export default class FastUtf8 {
     } catch {
       return false;
     } finally {
-      if (this.caching && cache !== encoded) {
+      if (
+        this.caching &&
+        cache !== encoded &&
+        (this.cacheMap.maxCacheSize === undefined || this.cacheMap.maxCacheSize >= encoded.length)
+      ) {
         // この条件分岐に入るということは、入力がエンコードされ、isView が真偽値を持っています。
         const cache = isView! ? encoded.slice() : encoded;
 
