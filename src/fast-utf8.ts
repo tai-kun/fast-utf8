@@ -95,14 +95,24 @@ export type FastUtf8Options = {
    * @default LatestOneCacheMap
    */
   readonly cacheMap?: ICacheMap | undefined;
-
-  /**
-   * 内部で使用するバッファーのサイズ（バイト単位）です。
-   *
-   * @default 1024
-   */
-  readonly allocateSize?: number | undefined;
-};
+} & (
+  | {
+      /**
+       * 内部で使用するバッファーのサイズ（バイト単位）です。
+       *
+       * @default 1024
+       */
+      readonly allocateSize?: number | undefined;
+    }
+  | {
+      /**
+       * 内部で使用するバッファーです。
+       *
+       * このバッファーを FastUtf8 インスタンスの外側で変更しないでください。
+       */
+      readonly unsafeBuffer: Uint8Array<ArrayBuffer>;
+    }
+);
 
 /**
  * 高速な UTF-8 エンコードおよびデコードを提供するクラスです。
@@ -166,7 +176,6 @@ export default class FastUtf8 {
       caching = true,
       cacheMap = new LatestOneCacheMap(),
       ignoreBOM = false,
-      allocateSize = DEFAULT_ALLOCATE_SIZE,
     } = options;
 
     this.strict = strict;
@@ -174,11 +183,19 @@ export default class FastUtf8 {
     this.caching = caching;
     this.cacheMap = cacheMap;
 
-    this._buffer = () => {
-      const buffer = new Uint8Array(allocateSize);
-      this._buffer = () => buffer;
-      return this._buffer();
-    };
+    let allocateSize: number;
+    if ("unsafeBuffer" in options) {
+      const { unsafeBuffer } = options;
+      allocateSize = unsafeBuffer.byteLength;
+      this._buffer = () => unsafeBuffer;
+    } else {
+      allocateSize = options.allocateSize ?? DEFAULT_ALLOCATE_SIZE;
+      this._buffer = () => {
+        const buffer = new Uint8Array(allocateSize);
+        this._buffer = () => buffer;
+        return this._buffer();
+      };
+    }
 
     this._decode = (input, options) => {
       const decoder = new TextDecoder("utf-8", { fatal: strict, ignoreBOM });
