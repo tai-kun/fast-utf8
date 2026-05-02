@@ -385,6 +385,10 @@ export default class FastUtf8 {
    */
   public isValidUtf8(input: string | DecodeInput): boolean {
     if (typeof input !== "string") {
+      if (input.byteLength <= 0) {
+        return true;
+      }
+
       try {
         this._assertSequence(input);
 
@@ -392,6 +396,10 @@ export default class FastUtf8 {
       } catch {
         return false;
       }
+    }
+
+    if (input === "") {
+      return true;
     }
 
     let cache: Uint8Array<ArrayBuffer> | null | undefined;
