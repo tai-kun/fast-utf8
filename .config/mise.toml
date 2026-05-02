@@ -1,7 +1,6 @@
 [tools]
-node = "22"
-npm = "11.13.0"
-bun = "1"
+node = "24"
+pnpm = "10"
 
 [tasks.test]
 run = [
@@ -33,15 +32,6 @@ run = [
   "npx tsc --noEmit --project ./.config/tsconfig.config.json",
 ]
 
-[tasks.bench]
-run = [{ task = "bench:server" }, { task = "bench:client" }]
-
-[tasks."bench:server"]
-run = "npx vitest bench --config ./.config/vitest.server.ts --run"
-
-[tasks."bench:client"]
-run = "npx vitest bench --config ./.config/vitest.client.ts --run"
-
 [tasks.fmt]
 run = "npx oxfmt --config ./.config/.oxfmtrc.json"
 
@@ -50,8 +40,8 @@ run = "npx oxlint --config ./.config/.oxlintrc.json"
 
 [tasks.update]
 run = [
-  "npx npm-check-updates --target minor -u --cooldown 3",
-  "npm install",
+  "npx npm-check-updates --target minor -u --cooldown 7",
+  "pnpm install",
   "npx playwright install --with-deps",
-  "npm audit",
+  "pnpm audit",
 ]
