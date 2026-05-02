@@ -123,12 +123,12 @@ export default class FastUtf8 {
   /**
    * 厳格モードが有効かどうかを保持するフラグです。
    */
-  private readonly strict: boolean;
+  public readonly strict: boolean;
 
   /**
    * キャッシュ機能が有効かどうかを保持するフラグです。
    */
-  private caching: boolean;
+  public caching: boolean;
 
   /**
    * エンコード結果を保持するキャッシュマップです。
@@ -461,19 +461,5 @@ export default class FastUtf8 {
    */
   public clearCache(): void {
     this.cacheMap.clear();
-  }
-
-  /**
-   * キャッシュ機能を有効化します。
-   */
-  public enableCache(): void {
-    this.caching = true;
-  }
-
-  /**
-   * キャッシュ機能を無効化します。
-   */
-  public disableCache(): void {
-    this.caching = false;
   }
 }
