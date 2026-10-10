@@ -1,0 +1,195 @@
+---
+title: API リファレンス
+description: クラスやオプションの一覧です。
+---
+
+`FastUtf8` を中心に、`LatestOneCacheMap` と関連する型をまとめています。まずは[はじめに](../getting-started)で基本操作を試し、詳しい使い方は[ガイド](../guides)で確認してください。
+
+## FastUtf8 [#fast-utf8]
+
+高速な UTF-8 のエンコードとデコードを提供するクラスです。内部バッファーの使い回しによって割り当てを抑えます。
+
+```ts import.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8();
+```
+
+### constructor [#constructor]
+
+<TypeTable
+  type={{
+    options: {
+      type: "FastUtf8Options",
+      description: "動作を指定するオプションです。省略した場合は既定値を使います。",
+    },
+  }}
+/>
+
+### decode [#decode]
+
+バイト列を文字列に変換します。`TextDecoder` と同じ内容を返します。
+
+<TypeTable
+  type={{
+    input: {
+      type: "DecodeInput",
+      required: true,
+      description: "変換するバイト列です。",
+    },
+    options: {
+      type: "TextDecodeOptions",
+      description: "`TextDecoder` に渡すオプションです。",
+    },
+  }}
+/>
+
+### encode [#encode]
+
+文字列を UTF-8 のバイト列に変換します。短い文字列では内部バッファーを使い回します。
+
+<TypeTable
+  type={{
+    input: {
+      type: "string",
+      required: true,
+      description: "変換する文字列です。",
+    },
+  }}
+/>
+
+### encodeInto [#encode-into]
+
+文字列を指定したバッファーへ直接書き込みます。すべて書き切ったときだけ結果をキャッシュします。
+
+<TypeTable
+  type={{
+    source: {
+      type: "string",
+      required: true,
+      description: "変換する文字列です。",
+    },
+    destination: {
+      type: "Uint8Array",
+      required: true,
+      description: "書き込む先のバッファーです。",
+    },
+  }}
+/>
+
+### countBytes [#count-bytes]
+
+文字列を符号化したときのバイト数を数えます。
+
+<TypeTable
+  type={{
+    input: {
+      type: "string",
+      required: true,
+      description: "数える対象の文字列です。",
+    },
+  }}
+/>
+
+### isValidUtf8 [#is-valid-utf8]
+
+入力が正しい UTF-8 かどうかを判定します。文字列は常に `true` を返します。
+
+<TypeTable
+  type={{
+    input: {
+      type: "string | DecodeInput",
+      required: true,
+      description: "判定する文字列またはバイト列です。",
+    },
+  }}
+/>
+
+### clearCache [#clear-cache]
+
+保持しているキャッシュをすべて破棄します。引数はありません。
+
+### プロパティー [#properties]
+
+| 項目      | 内容                                                   |
+| --------- | ------------------------------------------------------ |
+| `strict`  | 厳格モードを使うかどうかです                           |
+| `caching` | キャッシュを使うかどうかです。実行中に切り替えられます |
+
+## FastUtf8Options [#options]
+
+<TypeTable
+  type={{
+    strict: {
+      type: "boolean",
+      default: "false",
+      description: "有効にすると、不正な入力に対してエラーを投げます。",
+    },
+    ignoreBOM: {
+      type: "boolean",
+      default: "false",
+      description: "`TextDecoder` の同名オプションにそのまま渡します。",
+    },
+    caching: {
+      type: "boolean",
+      default: "true",
+      description: "エンコード結果のキャッシュを使うかどうかです。",
+    },
+    cacheMap: {
+      type: "ICacheMap",
+      description: "独自のキャッシュ実装です。省略した場合は直近の 1 件だけを保持します。",
+    },
+    allocateSize: {
+      type: "number",
+      default: "1024",
+      description: "内部で使い回すバッファーの大きさです。単位はバイトです。",
+    },
+    unsafeBuffer: {
+      type: "Uint8Array<ArrayBuffer>",
+      description:
+        "内部で使い回すバッファーです。外側から変更しないでください。`allocateSize` とは同時に指定しません。",
+    },
+  }}
+/>
+
+## LatestOneCacheMap [#latest-one-cache-map]
+
+直近の 1 件だけを保持する簡易なキャッシュです。`ICacheMap` を満たします。
+
+```ts cache.ts
+import { LatestOneCacheMap } from "fast-utf8";
+
+const cache = new LatestOneCacheMap(1024);
+```
+
+<TypeTable
+  type={{
+    maxCacheSize: {
+      type: "number",
+      required: true,
+      description: "保持できる最大のバイト数です。",
+    },
+  }}
+/>
+
+上限を超える値は保存せず、古い値を残します。一致しないキーの取得では `null` を返します。
+
+## ICacheMap [#icache-map]
+
+独自実装のための契約です。`get` と `set`、`clear` を実装してください。
+
+<TypeTable
+  type={{
+    maxCacheSize: {
+      type: "number",
+      description: "保持できる最大のバイト数です。省略した場合は制限しません。",
+    },
+  }}
+/>
+
+## 関連する型 [#types]
+
+| 型                 | 内容                                                    |
+| ------------------ | ------------------------------------------------------- |
+| `DecodeInput`      | `TextDecoder.prototype.decode` が受け入れる入力の型です |
+| `EncodeIntoResult` | `read` と `written` を含む実行結果の型です              |

@@ -1,0 +1,101 @@
+---
+title: キャッシュの使い方
+description: 繰り返しの変換を速くするための設定です。
+---
+
+同じ文字列を何度も変換する場合は、キャッシュが有効です。既定で有効になっており、直近の 1 件を保持します。
+
+## 既定の動作 [#defaults]
+
+```ts cache-default.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8(); // caching: true
+
+const first = utf8.encode("hello");
+const second = utf8.encode("hello");
+
+console.log(second); // first と同じ内容
+console.log(second === first); // false。複製を返すためです
+```
+
+返り値を書き換えても保存内容は壊れません。読み取り時と保存時に複製を作っています。
+
+```ts cache-safety.ts
+const first = utf8.encode("A");
+first[0] = 0x42;
+
+console.log(utf8.encode("A")[0]); // 0x41 のままです
+```
+
+## 無効化する [#disable]
+
+キャッシュが不要な場合や、入力が毎回異なる場合は無効にしてください。余分な複製を作りません。
+
+```ts cache-off.ts
+const utf8 = new FastUtf8({ caching: false });
+```
+
+:::tip
+`countBytes` もキャッシュを使います。保存済みの文字列では長さをそのまま返します。
+:::
+
+## 独自の実装を使う [#custom-map]
+
+`ICacheMap` を満たす値を `cacheMap` に渡すと、保存先を差し替えられます。`get` と `set`、`clear` を実装してください。
+
+```ts custom-cache.ts
+import { FastUtf8, type ICacheMap } from "fast-utf8";
+
+const store = new Map<string, Uint8Array<ArrayBuffer>>();
+
+const cacheMap: ICacheMap = {
+  get: (text) => store.get(text) ?? null,
+  set: (text, data) => {
+    store.set(text, data);
+  },
+  clear: () => {
+    store.clear();
+  },
+};
+
+const utf8 = new FastUtf8({ cacheMap });
+```
+
+:::note
+独自実装が例外を投げても、本処理は止まりません。読み取りの失敗は未保存として扱い、保存の失敗は無視します。
+:::
+
+## 大きさを制限する [#max-size]
+
+`maxCacheSize` を超える値は保存しません。同梱の `LatestOneCacheMap` は既定で 10240 バイトまで保持します。
+
+```ts max-size.ts
+import { FastUtf8, LatestOneCacheMap } from "fast-utf8";
+
+const utf8 = new FastUtf8({
+  cacheMap: new LatestOneCacheMap(1024),
+});
+```
+
+上限を超える入力でも変換結果は正しく返ります。保存だけを省きます。
+
+## 書きかけは保存しない [#encode-into]
+
+`encodeInto` はすべて書き切ったときだけ保存します。途中で打ち切った内容が後の `encode` に混ざることはありません。
+
+```ts partial.ts
+const utf8 = new FastUtf8();
+const destination = new Uint8Array(1);
+
+utf8.encodeInto("abc", destination); // read: 1、written: 1
+console.log(utf8.encode("abc")); // 3 バイトの正しい結果が返ります
+```
+
+## 破棄する [#clear]
+
+保存内容を捨てたいときは `clearCache` を呼び出してください。
+
+```ts clear.ts
+utf8.clearCache();
+```

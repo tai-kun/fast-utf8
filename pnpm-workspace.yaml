@@ -1,6 +1,25 @@
-minimumReleaseAge: 10080
+packages: ["packages/fast-utf8", "website"]
+
+minimumReleaseAge: 10080 # 7 日
 minimumReleaseAgeExclude: []
-onlyBuiltDependencies: []
-strictDepBuilds: true
+
 blockExoticSubdeps: true
+
 trustPolicy: no-downgrade
+trustPolicyExclude:
+  - "@pierre/theme"
+  - "@vercel/*"
+  - "chokidar"
+  - "semver"
+  - "undici-types"
+
+strictDepBuilds: true
+onlyBuiltDependencies: []
+allowBuilds:
+  esbuild: true
+
+update:
+  ignoreDeps:
+    - "*" # パッケージの更新は ncu に任せます。
+
+overrides: {}

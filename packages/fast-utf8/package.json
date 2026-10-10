@@ -1,0 +1,47 @@
+{
+  "name": "fast-utf8",
+  "version": "0.0.0",
+  "description": "",
+  "homepage": "https://tai-kun.github.io/fast-utf8",
+  "license": "MIT",
+  "repository": {
+    "url": "https://github.com/tai-kun/fast-utf8",
+    "directory": "packages/fast-utf8"
+  },
+  "files": [
+    "dist",
+    "src",
+    "package.json",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project ./.config/tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "24.0.5",
+    "@tsconfig/strictest": "2.0.8",
+    "@types/node": "24.19.1",
+    "@types/type-name": "1.0.32",
+    "@vitest/browser": "4.1.11",
+    "@vitest/browser-playwright": "4.1.11",
+    "@vitest/coverage-istanbul": "4.1.11",
+    "@vitest/coverage-v8": "4.1.11",
+    "playwright": "1.63.0",
+    "valibot": "1.5.0",
+    "vitest": "4.1.11"
+  },
+  "peerDependencies": {
+    "@logtape/logtape": "^2.0.0",
+    "valibot": "^1.0.0"
+  },
+  "readme": "README.md"
+}
