@@ -3,169 +3,109 @@ import LatestOneCacheMap from "./latest-one-cache-map.js";
 const DEFAULT_ALLOCATE_SIZE = 1024;
 
 /**
- * デコードへ渡せる入力の型です。
- *
- * `TextDecoder.prototype.decode` が受け入れる最初の引数の型に基づいています。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#types)
  */
 export type DecodeInput = NonNullable<Parameters<TextDecoder["decode"]>[0]>;
 
 /**
- * `encodeInto` の実行結果の型です。
- *
- * 読み取った文字数と書き込んだバイト数を含みます。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#types)
  */
 export type EncodeIntoResult = ReturnType<TextEncoder["encodeInto"]>;
 
 /**
- * エンコード結果を保持するキャッシュの契約です。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#icache-map)
  */
 export interface ICacheMap {
-  /**
-   * 保持できる最大のバイト数です。
-   */
   readonly maxCacheSize?: number;
 
-  /**
-   * 指定したキーと一致する値を返します。
-   *
-   * @param text 検索するキーです。
-   * @returns 一致した値です。一致しない場合は null または undefined を返します。
-   */
   get(text: string): Uint8Array<ArrayBuffer> | null | undefined;
 
-  /**
-   * 値を保存します。
-   *
-   * @param text 保存するキーです。
-   * @param data 保存する値です。
-   */
   set(text: string, data: Uint8Array<ArrayBuffer>): void;
 
-  /**
-   * 保持している値をすべて破棄します。
-   */
   clear(): void;
 }
 
 /**
- * {@link FastUtf8} のコンストラクターに渡すオプションです。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
  */
 export type FastUtf8Options = {
   /**
-   * 厳格モードを使うかどうかです。
-   *
-   * 有効にすると、不正な入力に対してエラーを投げます。
-   *
-   * @default false
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly strict?: boolean | undefined;
 
   /**
-   * BOM を無視するかどうかです。
-   *
-   * `TextDecoder` の同名オプションにそのまま渡します。
-   *
-   * @default false
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly ignoreBOM?: boolean | undefined;
 
   /**
-   * エンコード結果のキャッシュを使うかどうかです。
-   *
-   * @default true
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly caching?: boolean | undefined;
 
   /**
-   * 独自のキャッシュ実装です。
-   *
-   * 省略した場合は直近の 1 件だけを保持する実装を使います。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly cacheMap?: ICacheMap | undefined;
 
   /**
-   * 内部で使い回すバッファーの大きさです。
-   *
-   * 単位はバイトです。
-   *
-   * @default 1024
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly allocateSize?: number | undefined;
 
   /**
-   * 内部で使い回すバッファーです。
-   *
-   * このバッファーをインスタンスの外側から変更しないでください。
-   *
-   * これを指定した場合、{@link FastUtf8Options.allocateSize|allocateSize} は無視されます。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#options)
    */
   readonly unsafeBuffer?: Uint8Array<ArrayBuffer> | undefined;
 };
 
 /**
- * {@link FastUtf8.clone} に渡す上書き用のオプションです。
- *
- * すべて省略可能です。指定した項目だけが複製先で変わります。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
  */
 export type FastUtf8CloneOptions = {
   /**
-   * 厳格モードを使うかどうかです。
-   *
-   * 省略した場合は複製元の現在の値を使います。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly strict?: boolean | undefined;
 
   /**
-   * BOM を無視するかどうかです。
-   *
-   * 省略した場合は複製元の値を使います。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly ignoreBOM?: boolean | undefined;
 
   /**
-   * エンコード結果のキャッシュを使うかどうかです。
-   *
-   * 省略した場合は複製元の現在の値を使います。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly caching?: boolean | undefined;
 
   /**
-   * 独自のキャッシュ実装です。
-   *
-   * 省略した場合は複製元と同じ保存先を共有します。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly cacheMap?: ICacheMap | undefined;
 
   /**
-   * 内部で使い回すバッファーの大きさです。
-   *
-   * 単位はバイトです。`unsafeBuffer` と同時に指定した場合は `unsafeBuffer` を使います。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly allocateSize?: number | undefined;
 
   /**
-   * 内部で使い回すバッファーです。
-   *
-   * このバッファーをインスタンスの外側から変更しないでください。
-   *
-   * これを指定した場合、{@link FastUtf8CloneOptions.allocateSize|allocateSize} は無視されます。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone-options)
    */
   readonly unsafeBuffer?: Uint8Array<ArrayBuffer> | undefined;
 };
 
 /**
- * 高速な UTF-8 のエンコードとデコードを提供するクラスです。
- *
- * 内部バッファーの使い回しによって割り当てを抑え、任意で結果のキャッシュを使います。
+ * [API Reference](https://tai-kun.github.io/fast-utf8/api#fast-utf8)
  */
 export default class FastUtf8 {
   /**
-   * 厳格モードを使うかどうかです。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#properties)
    */
   public readonly strict: boolean;
 
   /**
-   * キャッシュを使うかどうかです。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#properties)
    */
   public caching: boolean;
 
@@ -221,9 +161,7 @@ export default class FastUtf8 {
   private encoder: TextEncoder | undefined;
 
   /**
-   * インスタンスを初期化します。
-   *
-   * @param options 動作を指定するオプションです。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#constructor)
    */
   public constructor(options: FastUtf8Options = {}) {
     const {
@@ -256,10 +194,7 @@ export default class FastUtf8 {
   }
 
   /**
-   * 設定を引き継いで新しいインスタンスを作ります。
-   *
-   * @param overrides 上書きする項目です。
-   * @returns 設定を引き継いだ新しいインスタンスです。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clone)
    */
   public clone(overrides: FastUtf8CloneOptions = {}): FastUtf8 {
     const {
@@ -282,23 +217,14 @@ export default class FastUtf8 {
   }
 
   /**
-   * バイト列を文字列に変換します。
-   *
-   * @param input 変換するバイト列です。
-   * @param options `TextDecoder` に渡すオプションです。
-   * @returns 変換した文字列です。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#decode)
    */
   public decode(input: DecodeInput, options?: TextDecodeOptions): string {
     return this.getDecoder().decode(input, options);
   }
 
   /**
-   * 文字列を UTF-8 のバイト列に変換します。
-   *
-   * 短い文字列では内部バッファーを使い回し、長い文字列では新しく割り当てます。
-   *
-   * @param input 変換する文字列です。
-   * @returns 変換したバイト列です。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#encode)
    */
   public encode(input: string): Uint8Array<ArrayBuffer> {
     const cached = this.readCache(input);
@@ -319,13 +245,7 @@ export default class FastUtf8 {
   }
 
   /**
-   * 文字列を指定したバッファーへ直接書き込みます。
-   *
-   * すべて書き切った場合にだけ結果をキャッシュします。途中で打ち切った内容は保存しません。
-   *
-   * @param source 変換する文字列です。
-   * @param destination 書き込む先のバッファーです。
-   * @returns 読み取った文字数と書き込んだバイト数です。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#encode-into)
    */
   public encodeInto(source: string, destination: Uint8Array): EncodeIntoResult {
     const result = this.getEncoder().encodeInto(source, destination as Uint8Array<ArrayBufferLike>);
@@ -349,10 +269,7 @@ export default class FastUtf8 {
   }
 
   /**
-   * 文字列を UTF-8 に変換したときのバイト数を数えます。
-   *
-   * @param input 数える対象の文字列です。
-   * @returns バイト数です。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#count-bytes)
    */
   public countBytes(input: string): number {
     const cached = this.readCache(input);
@@ -388,12 +305,7 @@ export default class FastUtf8 {
   }
 
   /**
-   * 入力が正しい UTF-8 かどうかを判定します。
-   *
-   * 文字列は常に符号化できるため、文字列を渡した場合は常に true を返します。
-   *
-   * @param input 判定する文字列またはバイト列です。
-   * @returns 正しい場合は true を返します。そうでない場合は false を返します。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#is-valid-utf8)
    */
   public isValidUtf8(input: string | DecodeInput): boolean {
     if (typeof input === "string") {
@@ -413,7 +325,7 @@ export default class FastUtf8 {
   }
 
   /**
-   * 保持しているキャッシュをすべて破棄します。
+   * [API Reference](https://tai-kun.github.io/fast-utf8/api#clear-cache)
    */
   public clearCache(): void {
     this.cacheMap.clear();
