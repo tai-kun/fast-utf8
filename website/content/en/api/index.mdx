@@ -1,0 +1,243 @@
+---
+title: API Reference
+description: A list of classes and options.
+---
+
+Covers `FastUtf8` along with `LatestOneCacheMap` and related types. Try the basic operations in [Getting Started](../getting-started) first, then see the [Guides](../guides) for detailed usage.
+
+## FastUtf8 [#fast-utf8]
+
+A class providing fast UTF-8 encoding and decoding. Reusing an internal buffer keeps allocations low.
+
+```ts import.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8();
+```
+
+### constructor [#constructor]
+
+<TypeTable
+  type={{
+    options: {
+      type: "FastUtf8Options",
+      description: "Options specifying behavior. Defaults are used when omitted.",
+    },
+  }}
+/>
+
+### decode [#decode]
+
+Convert a byte sequence to a string. Returns the same content as `TextDecoder`.
+
+<TypeTable
+  type={{
+    input: {
+      type: "DecodeInput",
+      required: true,
+      description: "The byte sequence to convert.",
+    },
+    options: {
+      type: "TextDecodeOptions",
+      description: "Options passed to `TextDecoder`.",
+    },
+  }}
+/>
+
+### encode [#encode]
+
+Convert a string to UTF-8 bytes. Short strings reuse the internal buffer.
+
+<TypeTable
+  type={{
+    input: {
+      type: "string",
+      required: true,
+      description: "The string to convert.",
+    },
+  }}
+/>
+
+### encodeInto [#encode-into]
+
+Write a string directly into the given buffer. The result is cached only when everything was written.
+
+<TypeTable
+  type={{
+    source: {
+      type: "string",
+      required: true,
+      description: "The string to convert.",
+    },
+    destination: {
+      type: "Uint8Array",
+      required: true,
+      description: "The buffer to write into.",
+    },
+  }}
+/>
+
+### countBytes [#count-bytes]
+
+Count the number of bytes of the encoded string.
+
+<TypeTable
+  type={{
+    input: {
+      type: "string",
+      required: true,
+      description: "The string to measure.",
+    },
+  }}
+/>
+
+### isValidUtf8 [#is-valid-utf8]
+
+Check whether the input is valid UTF-8. Strings always return `true`.
+
+<TypeTable
+  type={{
+    input: {
+      type: "string | DecodeInput",
+      required: true,
+      description: "The string or byte sequence to check.",
+    },
+  }}
+/>
+
+### clearCache [#clear-cache]
+
+Discard all cached entries. Takes no arguments.
+
+### clone [#clone]
+
+Create a new instance carrying over the configuration. Omitted fields keep their current settings.
+
+<TypeTable
+  type={{
+    overrides: {
+      type: "FastUtf8CloneOptions",
+      description: "Fields to override. Omitted fields keep their current settings.",
+    },
+  }}
+/>
+
+### Properties [#properties]
+
+| Field     | Description                                              |
+| --------- | -------------------------------------------------------- |
+| `strict`  | Whether to use strict mode                               |
+| `caching` | Whether to use the cache. Can be toggled while running  |
+
+## FastUtf8Options [#options]
+
+<TypeTable
+  type={{
+    strict: {
+      type: "boolean",
+      default: "false",
+      description: "When enabled, throws an error on invalid input.",
+    },
+    ignoreBOM: {
+      type: "boolean",
+      default: "false",
+      description: "Passed to the same-named `TextDecoder` option as-is.",
+    },
+    caching: {
+      type: "boolean",
+      default: "true",
+      description: "Whether to use the cache for encode results.",
+    },
+    cacheMap: {
+      type: "ICacheMap",
+      description: "A custom cache implementation. Keeps only the most recent entry when omitted.",
+    },
+    allocateSize: {
+      type: "number",
+      default: "1024",
+      description: "The size of the internally reused buffer, in bytes.",
+    },
+    unsafeBuffer: {
+      type: "Uint8Array<ArrayBuffer>",
+      description:
+        "The internally reused buffer. Do not modify it from the outside. `allocateSize` is ignored when specified.",
+    },
+  }}
+/>
+
+## FastUtf8CloneOptions [#clone-options]
+
+Override options passed to `clone`. All fields are optional. Only the specified fields change in the clone.
+
+<TypeTable
+  type={{
+    strict: {
+      type: "boolean",
+      description: "Whether to use strict mode. Uses the source's current value when omitted.",
+    },
+    ignoreBOM: {
+      type: "boolean",
+      description: "Whether to ignore the BOM. Uses the source's value when omitted.",
+    },
+    caching: {
+      type: "boolean",
+      description: "Whether to use the cache for encode results. Uses the source's current value when omitted.",
+    },
+    cacheMap: {
+      type: "ICacheMap",
+      description: "A custom cache implementation. Shares the source's store when omitted.",
+    },
+    allocateSize: {
+      type: "number",
+      description:
+        "The size of the internally reused buffer, in bytes. `unsafeBuffer` is used when both are specified.",
+    },
+    unsafeBuffer: {
+      type: "Uint8Array<ArrayBuffer>",
+      description:
+        "The internally reused buffer. Do not modify it from the outside. `allocateSize` is ignored when specified.",
+    },
+  }}
+/>
+
+## LatestOneCacheMap [#latest-one-cache-map]
+
+A simple cache that keeps only the most recent entry. Satisfies `ICacheMap`.
+
+```ts cache.ts
+import { LatestOneCacheMap } from "fast-utf8";
+
+const cache = new LatestOneCacheMap(1024);
+```
+
+<TypeTable
+  type={{
+    maxCacheSize: {
+      type: "number",
+      required: true,
+      description: "The maximum number of bytes that can be kept.",
+    },
+  }}
+/>
+
+Values over the limit are not stored, and the older value is kept. Lookups with a non-matching key return `null`.
+
+## ICacheMap [#icache-map]
+
+The contract for custom implementations. Implement `get`, `set`, and `clear`.
+
+<TypeTable
+  type={{
+    maxCacheSize: {
+      type: "number",
+      description: "The maximum number of bytes that can be kept. Unlimited when omitted.",
+    },
+  }}
+/>
+
+## Related types [#types]
+
+| Type               | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `DecodeInput`      | The input type accepted by `TextDecoder.prototype.decode` |
+| `EncodeIntoResult` | The result type containing `read` and `written`           |

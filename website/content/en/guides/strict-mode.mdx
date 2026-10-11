@@ -1,0 +1,41 @@
+---
+title: Strict Mode and Validation
+description: Settings that decide how invalid input is handled.
+---
+
+Lenient by default, and strict only for untrusted input.
+
+## Strict mode [#strict]
+
+When `strict` is enabled, `decode` throws on invalid byte sequences. Since `encode` results are always valid UTF-8, the setting only affects `decode`.
+
+```ts strict.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8({ strict: true });
+
+utf8.decode(new Uint8Array([0xff])); // Throws
+```
+
+To create a clone with stricter validation only, use `utf8.clone({ strict: true })`. See [Carrying Over Configuration](./clone) for details.
+
+## Validation and BOM handling [#validate]
+
+Use `isValidUtf8` when you want to avoid exceptions. Passing a string always returns `true`.
+
+```ts valid.ts
+const utf8 = new FastUtf8();
+
+console.log(utf8.isValidUtf8(new Uint8Array([0xff]))); // false
+```
+
+A leading BOM is removed by default. Pass `new FastUtf8({ ignoreBOM: true })` to keep it. The option is forwarded to `TextDecoder` as-is.
+
+## Which setting to use [#guide]
+
+| Scenario | Setting |
+| -------- | ------- |
+| Regular conversion | Keep the defaults |
+| Inspecting untrusted input | `decode` with `strict: true` |
+| Checking without exceptions | Use `isValidUtf8` |
+| Keeping a leading BOM | Pass `ignoreBOM: true` |

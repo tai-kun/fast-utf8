@@ -1,0 +1,62 @@
+---
+title: Using the Cache
+description: Settings for speeding up repeated conversions.
+---
+
+Effective when converting the same strings over and over, such as boilerplate text and labels. Enabled by default, keeping the most recent entry.
+
+## Repeated conversions [#defaults]
+
+```ts cache-default.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8(); // caching: true
+
+const first = utf8.encode("hello");
+const second = utf8.encode("hello"); // A separate copy with the same content
+
+first[0] = 0x42; // Mutating the return value does not corrupt the stored data
+console.log(utf8.encode("hello")[0]); // Still 0x68
+```
+
+`countBytes` also returns the stored length directly.
+
+## Disabling the cache [#disable]
+
+Disable it when inputs differ on every call, so no extra copies are made.
+
+```ts cache-off.ts
+const utf8 = new FastUtf8({ caching: false });
+```
+
+## Changing the store [#custom-map]
+
+Pass a value satisfying `ICacheMap` to `cacheMap` to swap the store. To limit how much is kept, pass `new LatestOneCacheMap(1024)`. Values exceeding `maxCacheSize` are not stored, but results are still returned correctly.
+
+```ts custom-cache.ts
+import { FastUtf8, type ICacheMap } from "fast-utf8";
+
+const store = new Map<string, Uint8Array<ArrayBuffer>>();
+
+const cacheMap: ICacheMap = {
+  get: (text) => store.get(text) ?? null,
+  set: (text, data) => {
+    store.set(text, data);
+  },
+  clear: () => {
+    store.clear();
+  },
+};
+
+const utf8 = new FastUtf8({ cacheMap });
+```
+
+:::note
+Even if a custom implementation throws, the main operation continues. Failed reads are treated as cache misses, and failed writes are ignored.
+:::
+
+## Notes [#notes]
+
+- `encodeInto` only stores the result when everything was written. Partial content never leaks into later `encode` calls.
+- `clone` shares the store. Pass `cacheMap` to separate it. See [Carrying Over Configuration](./clone) for details.
+- Call `utf8.clearCache()` to discard the stored content.

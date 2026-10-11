@@ -1,0 +1,62 @@
+---
+title: Getting Started
+description: Install the package and try the basics in 5 minutes.
+---
+
+Get the same results as the standard APIs with fewer allocations. Start with the default configuration.
+
+<Steps>
+  <Step title="Install the package">
+    Add the package to your project.
+
+    ```package-install
+    npm i fast-utf8
+    ```
+
+  </Step>
+  <Step title="Create an instance">
+    By default, caching is enabled and a 1024-byte internal buffer is used.
+
+    ```ts app.ts
+    import { FastUtf8 } from "fast-utf8";
+
+    const utf8 = new FastUtf8();
+    ```
+
+  </Step>
+  <Step title="Convert some text">
+    `encode` and `decode` return the same content as the standard APIs.
+
+    ```ts app.ts
+    const encoded = utf8.encode("こんにちは");
+    const text = utf8.decode(encoded);
+
+    console.log(text); // こんにちは
+    ```
+
+  </Step>
+</Steps>
+
+## Four common operations [#operations]
+
+| Operation     | Purpose                            | Example                   |
+| ------------- | ---------------------------------- | ------------------------- |
+| `encode`      | Convert a string to bytes          | `utf8.encode("あ")`       |
+| `decode`      | Convert bytes back to a string     | `utf8.decode(bytes)`      |
+| `countBytes`  | Count the encoded byte length      | `utf8.countBytes("あ")`   |
+| `isValidUtf8` | Check whether bytes are valid      | `utf8.isValidUtf8(bytes)` |
+
+:::note
+Passing a string to `isValidUtf8` always returns `true`. Use it when you want to check byte sequences.
+:::
+
+## What to read next [#next]
+
+<CardGroup cols={2}>
+  <Card title="Guides" href="../guides" icon="book-open">
+    Try per-scenario settings such as caching and cloning.
+  </Card>
+  <Card title="API Reference" href="../api" icon="code">
+    See every type and default value.
+  </Card>
+</CardGroup>

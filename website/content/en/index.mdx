@@ -1,0 +1,41 @@
+---
+title: Fast UTF-8
+description: A TypeScript library for fast UTF-8 encoding and decoding.
+---
+
+Speeds up repeated processing of short strings, such as sending and receiving boilerplate messages. Returns the same results as `TextEncoder` with fewer allocations.
+
+<CardGroup cols={2}>
+  <Card title="Getting Started" href="./getting-started" icon="rocket">
+    Install the package and try the basics in 5 minutes.
+  </Card>
+  <Card title="Guides" href="./guides" icon="book-open">
+    Learn per-scenario configuration and cloning.
+  </Card>
+  <Card title="API Reference" href="./api" icon="code">
+    Browse the full list of classes and options.
+  </Card>
+</CardGroup>
+
+## Why choose it [#why]
+
+- Drop-in replacement. Returns the same results as `TextEncoder` and `TextDecoder`.
+- Fewer allocations for short strings. Reuses a 1024-byte internal buffer by default.
+- Caching helps with repeated boilerplate. Ships with an implementation that keeps the most recent entry.
+- Safe to mutate return values. Always copies data at input/output boundaries.
+
+## Quickstart [#quickstart]
+
+```ts basic.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8();
+
+const encoded = utf8.encode("こんにちは"); // 15 bytes
+console.log(utf8.decode(encoded)); // こんにちは
+console.log(utf8.countBytes("こんにちは")); // 15
+```
+
+:::tip
+If this is your first time here, start with [Getting Started](./getting-started). The full list of options is covered in the [API Reference](./api).
+:::

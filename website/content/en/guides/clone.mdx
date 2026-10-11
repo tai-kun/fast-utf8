@@ -1,0 +1,39 @@
+---
+title: Carrying Over Configuration
+description: How to clone an instance with clone while carrying over settings.
+---
+
+When you want different settings per use case, create a clone that carries over the current configuration. The original instance is left unchanged.
+
+## Basics [#basic]
+
+```ts clone.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8({ strict: true });
+
+// Split settings for validation only. Only the specified fields change
+const strictOnly = utf8.clone({ strict: true, caching: false });
+```
+
+Omitting the argument carries over the current configuration as-is. `caching` and `strict` use their current values, `cacheMap` shares the same store, and an instance created with an external buffer carries over that buffer.
+
+## Practical examples [#recipes]
+
+```ts clone-recipes.ts
+import { LatestOneCacheMap } from "fast-utf8";
+
+// Change only the size. When unsafeBuffer is specified together, unsafeBuffer is used
+const compact = utf8.clone({ allocateSize: 8 });
+
+// Separate the store. If omitted, clearCache on either side affects both
+const separated = utf8.clone({
+  cacheMap: new LatestOneCacheMap(1024),
+});
+
+// Changes after cloning do not affect the original
+const cloned = utf8.clone();
+cloned.caching = false; // utf8.caching stays true
+```
+
+See the [API Reference](../api#clone-options) for the full list of overridable fields.

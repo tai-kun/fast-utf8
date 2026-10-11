@@ -1,0 +1,49 @@
+---
+title: Understanding Buffers
+description: Internal buffer settings for reducing allocations.
+---
+
+Short strings reuse the internal buffer, while long strings allocate a new one. The result is identical to `TextEncoder`; only the number of allocations changes.
+
+## Choosing a size [#size]
+
+One character takes up to 3 bytes, so any string up to `allocateSize` divided by 3 characters always fits in the internal buffer. The default of 1024 bytes covers up to 341 characters.
+
+Use a smaller value for mostly short strings, and a larger one for mostly long strings.
+
+```ts allocate.ts
+import { FastUtf8 } from "fast-utf8";
+
+// Use a 512-byte internal buffer
+const utf8 = new FastUtf8({ allocateSize: 512 });
+
+// To change it later, clone the instance with only that setting changed
+const compact = utf8.clone({ allocateSize: 8 });
+```
+
+## Reusing an external buffer [#unsafe-buffer]
+
+You can also pass your own `Uint8Array`. When specified together with `allocateSize`, this buffer takes precedence.
+
+```ts unsafe.ts
+const shared = new Uint8Array(2048);
+const utf8 = new FastUtf8({ unsafeBuffer: shared });
+```
+
+:::warning[Caution]
+The contents are overwritten internally. Do not modify it from the outside after passing it, and do not share it with other uses.
+:::
+
+## Operations that skip the buffer [#recipes]
+
+| Goal | How |
+| ---- | --- |
+| Write directly into the caller's array | `encodeInto("あ", destination)`. `read` and `written` have the same meaning as in the standard API |
+| Only need the length | `countBytes("こんにちは")`. No copies are made for short strings |
+
+```ts into.ts
+const destination = new Uint8Array(16);
+const result = utf8.encodeInto("あ", destination);
+
+console.log(result); // { read: 1, written: 3 }
+```
