@@ -109,6 +109,19 @@ const utf8 = new FastUtf8();
 
 保持しているキャッシュをすべて破棄します。引数はありません。
 
+### clone [#clone]
+
+設定を引き継いで新しいインスタンスを作ります。省略した項目は設定をそのまま引き継ぎます。
+
+<TypeTable
+  type={{
+    overrides: {
+      type: "FastUtf8CloneOptions",
+      description: "上書きする項目です。省略した場合は設定をそのまま引き継ぎます。",
+    },
+  }}
+/>
+
 ### プロパティー [#properties]
 
 | 項目      | 内容                                                   |
@@ -147,7 +160,42 @@ const utf8 = new FastUtf8();
     unsafeBuffer: {
       type: "Uint8Array<ArrayBuffer>",
       description:
-        "内部で使い回すバッファーです。外側から変更しないでください。`allocateSize` とは同時に指定しません。",
+        "内部で使い回すバッファーです。外側から変更しないでください。指定した場合は `allocateSize` は無視されます。",
+    },
+  }}
+/>
+
+## FastUtf8CloneOptions [#clone-options]
+
+`clone` に渡す上書き用のオプションです。すべて省略可能です。指定した項目だけが複製先で変わります。
+
+<TypeTable
+  type={{
+    strict: {
+      type: "boolean",
+      description: "厳格モードを使うかどうかです。省略した場合は複製元の現在の値を使います。",
+    },
+    ignoreBOM: {
+      type: "boolean",
+      description: "BOM を無視するかどうかです。省略した場合は複製元の値を使います。",
+    },
+    caching: {
+      type: "boolean",
+      description: "エンコード結果のキャッシュを使うかどうかです。省略した場合は複製元の現在の値を使います。",
+    },
+    cacheMap: {
+      type: "ICacheMap",
+      description: "独自のキャッシュ実装です。省略した場合は複製元と同じ保存先を共有します。",
+    },
+    allocateSize: {
+      type: "number",
+      description:
+        "内部で使い回すバッファーの大きさです。単位はバイトです。`unsafeBuffer` と同時に指定した場合は `unsafeBuffer` を使います。",
+    },
+    unsafeBuffer: {
+      type: "Uint8Array<ArrayBuffer>",
+      description:
+        "内部で使い回すバッファーです。外側から変更しないでください。指定した場合は `allocateSize` は無視されます。",
     },
   }}
 />

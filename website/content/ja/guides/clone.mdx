@@ -1,0 +1,39 @@
+---
+title: 設定の引き継ぎ
+description: clone で設定を引き継いだ複製を作る方法です。
+---
+
+用途別に設定を分けたいときに、現在の設定を引き継いだ複製を作れます。元のインスタンスは変わりません。
+
+## 基本 [#basic]
+
+```ts clone.ts
+import { FastUtf8 } from "fast-utf8";
+
+const utf8 = new FastUtf8({ strict: true });
+
+// 検証用だけ設定を分けます。指定した項目だけが変わります
+const strictOnly = utf8.clone({ strict: true, caching: false });
+```
+
+引数を省略すると現在の設定をそのまま引き継ぎます。`caching` と `strict` はそのときの値を、`cacheMap` は同じ保存先を共有します。外部バッファーで作った場合は、そのバッファーを引き継ぎます。
+
+## 実践例 [#recipes]
+
+```ts clone-recipes.ts
+import { LatestOneCacheMap } from "fast-utf8";
+
+// 大きさだけ変えます。unsafeBuffer と同時に指定した場合は unsafeBuffer を使います
+const compact = utf8.clone({ allocateSize: 8 });
+
+// 保存先を分けます。省略した場合はどちらかの clearCache が両方に影響します
+const separated = utf8.clone({
+  cacheMap: new LatestOneCacheMap(1024),
+});
+
+// 複製後に変えても元には影響しません
+const cloned = utf8.clone();
+cloned.caching = false; // utf8.caching は true のままです
+```
+
+上書きできる項目の一覧は [API リファレンス](../api#clone-options)を確認してください。

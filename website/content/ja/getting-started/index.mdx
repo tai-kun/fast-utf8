@@ -46,29 +46,15 @@ description: 導入から基本的な使い方までを 5 分で試せます。
 | `countBytes`  | 符号化後のバイト数を数えます   | `utf8.countBytes("あ")`   |
 | `isValidUtf8` | バイト列が正しいかを判定します | `utf8.isValidUtf8(bytes)` |
 
-```ts usage.ts
-const utf8 = new FastUtf8();
-
-utf8.encode("あ"); // Uint8Array(3) [0xe3, 0x81, 0x82]
-utf8.countBytes("あ"); // 3
-utf8.isValidUtf8(new Uint8Array([0xff])); // false
-```
-
 :::note
-文字列を `isValidUtf8` に渡した場合は常に `true` を返します。文字列は必ず符号化できるためです。バイト列の正誤を調べたいときに使ってください。
+文字列を `isValidUtf8` に渡した場合は常に `true` を返します。バイト列の正誤を調べたいときに使ってください。
 :::
 
 ## 次に読む [#next]
 
 <CardGroup cols={2}>
-  <Card title="キャッシュの使い方" href="../guides/caching" icon="database">
-    繰り返しの変換を速くします。
-  </Card>
-  <Card title="バッファーの考え方" href="../guides/buffers" icon="memory-stick">
-    内部バッファーの大きさを調整します。
-  </Card>
-  <Card title="厳格モードと検証" href="../guides/strict-mode" icon="shield-check">
-    不正な入力の扱いを決めます。
+  <Card title="ガイド" href="../guides" icon="book-open">
+    キャッシュや複製など、場面別の設定を試します。
   </Card>
   <Card title="API リファレンス" href="../api" icon="code">
     すべての型と既定値を確認できます。

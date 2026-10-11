@@ -3,11 +3,11 @@ title: 厳格モードと検証
 description: 不正な入力の扱いを決めるための設定です。
 ---
 
-既定では寛容に変換し、必要なときだけ厳しく検証します。用途に合わせて使い分けてください。
+既定では寛容に変換し、外部からの入力だけ厳しく扱います。
 
-## 厳格モードを使う [#strict]
+## 厳格モード [#strict]
 
-`strict` を有効にすると、不正なバイト列の `decode` で例外を投げます。
+`strict` を有効にすると、不正なバイト列の `decode` で例外を投げます。`encode` の結果は常に正しい UTF-8 になるため、設定の影響は `decode` だけです。
 
 ```ts strict.ts
 import { FastUtf8 } from "fast-utf8";
@@ -17,58 +17,19 @@ const utf8 = new FastUtf8({ strict: true });
 utf8.decode(new Uint8Array([0xff])); // 例外を投げます
 ```
 
-:::note
-`encode` の結果は常に正しい UTF-8 になります。孤立サロゲートなどの文字列も置換文字として符号化します。
-:::
+検証だけを厳しくした複製を作りたいときは `utf8.clone({ strict: true })` を使ってください。詳しくは[設定の引き継ぎ](./clone)を参照してください。
 
-```ts surrogate.ts
-const utf8 = new FastUtf8({ strict: true });
+## 検証と BOM の扱い [#validate]
 
-console.log(utf8.encode("\uD800")); // Uint8Array(3) [0xef, 0xbf, 0xbd]
-```
-
-## BOM の扱い [#bom]
-
-`ignoreBOM` は `TextDecoder` の同名オプションにそのまま渡ります。既定では先頭の BOM を除去します。
-
-<Tabs>
-  <Tab title="既定">
-    先頭の BOM を除去します。
-
-    ```ts bom-default.ts
-    const utf8 = new FastUtf8();
-    const bytes = new Uint8Array([0xef, 0xbb, 0xbf, 0x61]);
-
-    console.log(utf8.decode(bytes)); // a
-    ```
-
-  </Tab>
-  <Tab title="保持する">
-    `ignoreBOM` を有効にすると BOM を残します。
-
-    ```ts bom-keep.ts
-    const utf8 = new FastUtf8({ ignoreBOM: true });
-    const bytes = new Uint8Array([0xef, 0xbb, 0xbf, 0x61]);
-
-    console.log(utf8.decode(bytes)); // \uFEFFa
-    ```
-
-  </Tab>
-</Tabs>
-
-## 正誤を判定する [#is-valid]
-
-`isValidUtf8` は例外を投げずに正誤を返します。バイト列の検査に使ってください。
+例外を避けたいときは `isValidUtf8` を使ってください。文字列を渡した場合は常に `true` を返します。
 
 ```ts valid.ts
 const utf8 = new FastUtf8();
 
-console.log(utf8.isValidUtf8(new Uint8Array([0x61]))); // true
 console.log(utf8.isValidUtf8(new Uint8Array([0xff]))); // false
-console.log(utf8.isValidUtf8(new Uint8Array([]))); // true
 ```
 
-文字列を渡した場合は常に `true` を返します。文字列は必ず符号化できるためです。
+先頭の BOM は既定で除去されます。残したいときは `new FastUtf8({ ignoreBOM: true })` を指定してください。`TextDecoder` の同名オプションにそのまま渡ります。
 
 ## 使い分けの目安 [#guide]
 

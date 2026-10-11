@@ -82,26 +82,76 @@ export type FastUtf8Options = {
    * 省略した場合は直近の 1 件だけを保持する実装を使います。
    */
   readonly cacheMap?: ICacheMap | undefined;
-} & (
-  | {
-      /**
-       * 内部で使い回すバッファーの大きさです。
-       *
-       * 単位はバイトです。
-       *
-       * @default 1024
-       */
-      readonly allocateSize?: number | undefined;
-    }
-  | {
-      /**
-       * 内部で使い回すバッファーです。
-       *
-       * このバッファーをインスタンスの外側から変更しないでください。
-       */
-      readonly unsafeBuffer: Uint8Array<ArrayBuffer>;
-    }
-);
+
+  /**
+   * 内部で使い回すバッファーの大きさです。
+   *
+   * 単位はバイトです。
+   *
+   * @default 1024
+   */
+  readonly allocateSize?: number | undefined;
+
+  /**
+   * 内部で使い回すバッファーです。
+   *
+   * このバッファーをインスタンスの外側から変更しないでください。
+   *
+   * これを指定した場合、{@link FastUtf8Options.allocateSize|allocateSize} は無視されます。
+   */
+  readonly unsafeBuffer?: Uint8Array<ArrayBuffer> | undefined;
+};
+
+/**
+ * {@link FastUtf8.clone} に渡す上書き用のオプションです。
+ *
+ * すべて省略可能です。指定した項目だけが複製先で変わります。
+ */
+export type FastUtf8CloneOptions = {
+  /**
+   * 厳格モードを使うかどうかです。
+   *
+   * 省略した場合は複製元の現在の値を使います。
+   */
+  readonly strict?: boolean | undefined;
+
+  /**
+   * BOM を無視するかどうかです。
+   *
+   * 省略した場合は複製元の値を使います。
+   */
+  readonly ignoreBOM?: boolean | undefined;
+
+  /**
+   * エンコード結果のキャッシュを使うかどうかです。
+   *
+   * 省略した場合は複製元の現在の値を使います。
+   */
+  readonly caching?: boolean | undefined;
+
+  /**
+   * 独自のキャッシュ実装です。
+   *
+   * 省略した場合は複製元と同じ保存先を共有します。
+   */
+  readonly cacheMap?: ICacheMap | undefined;
+
+  /**
+   * 内部で使い回すバッファーの大きさです。
+   *
+   * 単位はバイトです。`unsafeBuffer` と同時に指定した場合は `unsafeBuffer` を使います。
+   */
+  readonly allocateSize?: number | undefined;
+
+  /**
+   * 内部で使い回すバッファーです。
+   *
+   * このバッファーをインスタンスの外側から変更しないでください。
+   *
+   * これを指定した場合、{@link FastUtf8CloneOptions.allocateSize|allocateSize} は無視されます。
+   */
+  readonly unsafeBuffer?: Uint8Array<ArrayBuffer> | undefined;
+};
 
 /**
  * 高速な UTF-8 のエンコードとデコードを提供するクラスです。
@@ -128,6 +178,13 @@ export default class FastUtf8 {
    * `TextDecoder` の BOM に関する設定です。
    */
   private readonly ignoreBOM: boolean;
+
+  /**
+   * 外部から渡されたバッファーです。
+   *
+   * `unsafeBuffer` で初期化した場合だけ値を持ちます。
+   */
+  private readonly externalBuffer: Uint8Array<ArrayBuffer> | undefined;
 
   /**
    * 使い回すための内部バッファーです。
@@ -174,6 +231,8 @@ export default class FastUtf8 {
       caching = true,
       cacheMap = new LatestOneCacheMap(),
       ignoreBOM = false,
+      allocateSize = DEFAULT_ALLOCATE_SIZE,
+      unsafeBuffer,
     } = options;
 
     this.strict = strict;
@@ -181,17 +240,45 @@ export default class FastUtf8 {
     this.cacheMap = cacheMap;
     this.ignoreBOM = ignoreBOM;
 
-    if ("unsafeBuffer" in options) {
-      this.allocateSize = options.unsafeBuffer.byteLength;
-      this.reusableBuffer = options.unsafeBuffer;
+    if (unsafeBuffer) {
+      this.allocateSize = unsafeBuffer.byteLength;
+      this.externalBuffer = unsafeBuffer;
+      this.reusableBuffer = unsafeBuffer;
     } else {
-      this.allocateSize = options.allocateSize ?? DEFAULT_ALLOCATE_SIZE;
+      this.allocateSize = allocateSize;
+      this.externalBuffer = undefined;
       this.reusableBuffer = undefined;
     }
 
     // UTF-8 では 1 文字が最大で 3 バイトになります。
     // 参考: https://developer.mozilla.org/docs/Web/API/TextEncoder/encodeInto
     this.safeLength = Math.floor(this.allocateSize / 3);
+  }
+
+  /**
+   * 設定を引き継いで新しいインスタンスを作ります。
+   *
+   * @param overrides 上書きする項目です。
+   * @returns 設定を引き継いだ新しいインスタンスです。
+   */
+  public clone(overrides: FastUtf8CloneOptions = {}): FastUtf8 {
+    const {
+      strict = this.strict,
+      caching = this.caching,
+      cacheMap = this.cacheMap,
+      ignoreBOM = this.ignoreBOM,
+      allocateSize = this.allocateSize,
+      unsafeBuffer = this.externalBuffer,
+    } = overrides;
+
+    return new FastUtf8({
+      strict,
+      caching,
+      cacheMap,
+      ignoreBOM,
+      allocateSize,
+      unsafeBuffer,
+    });
   }
 
   /**

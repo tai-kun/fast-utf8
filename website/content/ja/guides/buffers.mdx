@@ -3,19 +3,11 @@ title: バッファーの考え方
 description: 割り当てを抑えるための内部バッファーの設定です。
 ---
 
-短い文字列では内部バッファーを使い回し、長い文字列では新しく割り当てます。切り替えは文字数で自動的に決まります。
+短い文字列では内部バッファーを使い回し、長い文字列では新しく割り当てます。結果の内容は `TextEncoder` と同じで、変わるのは割り当ての回数だけです。
 
-## 安全な文字数 [#safe-length]
+## 大きさの決め方 [#size]
 
-UTF-8 では 1 文字が最大で 3 バイトになります。そのため、次の式を満たす文字数は必ず内部バッファーに収まります。
-
-$$
-\text{安全な文字数} = \left\lfloor \frac{\text{allocateSize}}{3} \right\rfloor
-$$
-
-既定の 1024 バイトでは 341 文字までが対象です。
-
-## 大きさを変える [#allocate-size]
+1 文字は最大で 3 バイトになるため、`allocateSize` を 3 で割った文字数までは必ず内部バッファーに収まります。既定の 1024 バイトでは 341 文字までが対象です。
 
 短い文字列が多い場合は小さく、長い文字列が多い場合は大きくしてください。
 
@@ -24,15 +16,14 @@ import { FastUtf8 } from "fast-utf8";
 
 // 512 バイトの内部バッファーを使う
 const utf8 = new FastUtf8({ allocateSize: 512 });
+
+// 後から変えたくなったら、設定だけを変えた複製を作れます
+const compact = utf8.clone({ allocateSize: 8 });
 ```
 
-:::note
-大きさは動作を変えません。結果の内容は `TextEncoder` と同じです。変わるのは割り当ての回数だけです。
-:::
+## 外部バッファーの使い回し [#unsafe-buffer]
 
-## 外部のバッファーを使う [#unsafe-buffer]
-
-自分で用意した `Uint8Array` を使い回すこともできます。渡した後は外側から変更しないでください。
+自分で用意した `Uint8Array` を渡すこともできます。`allocateSize` と同時に指定した場合はこちらを使います。
 
 ```ts unsafe.ts
 const shared = new Uint8Array(2048);
@@ -40,26 +31,19 @@ const utf8 = new FastUtf8({ unsafeBuffer: shared });
 ```
 
 :::warning[ご注意]
-`unsafeBuffer` の内容は内部で上書きされます。ほかの用途と共有しないでください。
+内容は内部で上書きされます。渡した後は外側から変更せず、ほかの用途と共有しないでください。
 :::
 
-## 直接書き込む [#encode-into]
+## バッファーを使わない操作 [#recipes]
 
-呼び出し側のバッファーへ直接書きたいときは `encodeInto` を使ってください。戻り値の `read` と `written` は標準 API と同じ意味です。
+| やりたいこと | 方法 |
+| ------------ | ---- |
+| 呼び出し側の配列へ直接書きます | `encodeInto("あ", destination)`。`read` と `written` は標準 API と同じ意味です |
+| 長さだけが要ります | `countBytes("こんにちは")`。短い文字列では複製を作りません |
 
 ```ts into.ts
-const utf8 = new FastUtf8();
 const destination = new Uint8Array(16);
-
 const result = utf8.encodeInto("あ", destination);
 
 console.log(result); // { read: 1, written: 3 }
-```
-
-## 数えるだけなら [#count-bytes]
-
-バイト列が不要で長さだけが要る場合は `countBytes` を使ってください。短い文字列では内部バッファーで数えるため、結果の複製を作りません。
-
-```ts count.ts
-console.log(utf8.countBytes("こんにちは")); // 15
 ```

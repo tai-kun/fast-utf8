@@ -3,14 +3,14 @@ title: Fast UTF-8
 description: 高速な UTF-8 のエンコードとデコードを提供する TypeScript ライブラリーです。
 ---
 
-`FastUtf8` は `TextEncoder` と `TextDecoder` を使い回し、短い文字列では内部バッファーを再利用します。同じ文字列を繰り返し扱う用途では、結果のキャッシュによって割り当てをさらに抑えられます。
+定型文の送受信など、短い文字列を繰り返す処理を速くします。`TextEncoder` と同じ結果を、より少ない割り当てで返します。
 
 <CardGroup cols={2}>
   <Card title="はじめに" href="./getting-started" icon="rocket">
     導入から基本的な使い方までを 5 分で試せます。
   </Card>
   <Card title="ガイド" href="./guides" icon="book-open">
-    キャッシュやバッファー、厳格モードの考え方を学べます。
+    場面別の設定と複製の方法を学べます。
   </Card>
   <Card title="API リファレンス" href="./api" icon="code">
     クラスやオプションの一覧を確認できます。
@@ -19,10 +19,10 @@ description: 高速な UTF-8 のエンコードとデコードを提供する Ty
 
 ## 選ぶ理由 [#why]
 
-- 標準 API と同じ結果を返します。`TextEncoder` と `TextDecoder` を薄く包んでいるだけです。
+- 置き換えるだけで動きます。`TextEncoder` と `TextDecoder` と同じ結果を返します。
 - 短い文字列では割り当てを抑えます。既定で 1024 バイトの内部バッファーを使い回します。
-- 繰り返しの変換ではキャッシュが効きます。直近の 1 件を保持する実装を同梱しています。
-- 返り値の変更が内部状態を壊しません。入出力の境界では必ず複製を作ります。
+- 定型文の再変換ではキャッシュが効きます。直近の 1 件を保持する実装を同梱しています。
+- 返り値を書き換えても壊れません。入出力の境界では必ず複製を作ります。
 
 ## すぐに試す [#quickstart]
 
@@ -31,11 +31,9 @@ import { FastUtf8 } from "fast-utf8";
 
 const utf8 = new FastUtf8();
 
-const encoded = utf8.encode("こんにちは");
-console.log(encoded.length); // 15
+const encoded = utf8.encode("こんにちは"); // 15 バイト
 console.log(utf8.decode(encoded)); // こんにちは
 console.log(utf8.countBytes("こんにちは")); // 15
-console.log(utf8.isValidUtf8(encoded)); // true
 ```
 
 :::tip

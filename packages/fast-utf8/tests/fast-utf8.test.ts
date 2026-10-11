@@ -374,3 +374,87 @@ describe("キャッシュ", () => {
     expect(result).toStrictEqual(new TextEncoder().encode(input));
   });
 });
+
+describe("clone", () => {
+  test("厳格さと BOM の扱いを引き継ぐ", ({ expect }) => {
+    // 準備
+    const sut = new FastUtf8({ strict: true, ignoreBOM: true });
+
+    // 実行
+    const cloned = sut.clone();
+
+    // 検証
+    expect(cloned.strict).toBe(true);
+    expect(cloned.encode("あ")).toStrictEqual(sut.encode("あ"));
+    expect(() => cloned.decode(new Uint8Array([0xff]))).toThrow();
+    expect(cloned.decode(new Uint8Array([0xef, 0xbb, 0xbf, 0x61]))).toBe("\uFEFFa");
+  });
+
+  test("そのときの caching を引き継ぐ", ({ expect }) => {
+    // 準備
+    const sut = new FastUtf8({ caching: true });
+    sut.caching = false;
+
+    // 実行
+    const cloned = sut.clone();
+
+    // 検証
+    expect(cloned.caching).toBe(false);
+  });
+
+  test("省略した場合は保存先を共有する", ({ expect }) => {
+    // 準備
+    const cache = new RecordingCacheMap();
+    const sut = new FastUtf8({ caching: true, cacheMap: cache });
+    sut.encode("shared");
+
+    // 実行
+    const cloned = sut.clone();
+    cloned.encode("shared");
+
+    // 検証
+    expect(cache.calls.set.length).toBe(1);
+    expect(cache.calls.get).toStrictEqual(["shared", "shared"]);
+  });
+
+  test("上書きした項目だけが変わる", ({ expect }) => {
+    // 準備
+    const sut = new FastUtf8({ strict: false, caching: true });
+
+    // 実行
+    const cloned = sut.clone({ strict: true, caching: false });
+
+    // 検証
+    expect(cloned.strict).toBe(true);
+    expect(cloned.caching).toBe(false);
+    expect(sut.strict).toBe(false);
+    expect(sut.caching).toBe(true);
+    expect(() => cloned.decode(new Uint8Array([0xff]))).toThrow();
+  });
+
+  test("大きさの上書きでも正しく符号化する", ({ expect }) => {
+    // 準備
+    const sut = new FastUtf8({ allocateSize: 16 });
+
+    // 実行
+    const cloned = sut.clone({ allocateSize: 8 });
+    const input = "a".repeat(500);
+
+    // 検証
+    expect(cloned.encode(input)).toStrictEqual(new TextEncoder().encode(input));
+    expect(sut.encode(input)).toStrictEqual(new TextEncoder().encode(input));
+  });
+
+  test("複製後の変更は元に影響しない", ({ expect }) => {
+    // 準備
+    const sut = new FastUtf8({ caching: true });
+
+    // 実行
+    const cloned = sut.clone();
+    cloned.caching = false;
+
+    // 検証
+    expect(sut.caching).toBe(true);
+    expect(cloned.caching).toBe(false);
+  });
+});
