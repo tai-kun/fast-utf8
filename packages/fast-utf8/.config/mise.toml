@@ -34,10 +34,31 @@ run = { task = "lint" }
 run = [
   "npx tsc --noEmit --project ./.config/tsconfig.base.json",
   "npx tsc --noEmit --project ./.config/tsconfig.test.json",
+  "npx tsc --noEmit --project ./.config/tsconfig.bench.json",
   "npx tsc --noEmit --project ./.config/tsconfig.client.json",
   "npx tsc --noEmit --project ./.config/tsconfig.server.json",
   "npx tsc --noEmit --project ./.config/tsconfig.config.json",
 ]
+
+[tasks.bench]
+description = "Node.js と各ブラウザーでベンチマークを計測し ./.tmp/benchmarks/<日時>/ に JSON で保存します。"
+run = "node ./.config/bench.ts"
+
+[tasks."bench:node"]
+description = "Node.js でベンチマークを計測します。"
+run = "node ./.config/bench.ts node"
+
+[tasks."bench:chromium"]
+description = "Chromium でベンチマークを計測します。"
+run = "node ./.config/bench.ts chromium"
+
+[tasks."bench:firefox"]
+description = "Firefox でベンチマークを計測します。"
+run = "node ./.config/bench.ts firefox"
+
+[tasks."bench:webkit"]
+description = "WebKit でベンチマークを計測します。"
+run = "node ./.config/bench.ts webkit"
 
 [tasks.format]
 run = "set -e; cp ./.config/.oxfmtrc.json ./.tmp-oxfmtrc.json; trap 'rm -f ./.tmp-oxfmtrc.json' EXIT; npx oxfmt --config ./.tmp-oxfmtrc.json"

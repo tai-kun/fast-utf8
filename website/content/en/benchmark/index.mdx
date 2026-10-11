@@ -1,0 +1,160 @@
+---
+title: Benchmark
+description: The latest measurements for each runtime.
+---
+
+{/* This file is auto-generated. Run scripts/update-benchmark.ts instead of editing it directly. */}
+
+Results for `benchmarks/fast-utf8.bench.ts` at fast-utf8 v0.0.8 (measured: 2026-10-11 16:58:48).
+
+:::note
+Results depend on the machine and browser versions. Use them as a rough guide for comparisons under the same conditions.
+:::
+
+## Node.js [#nodejs]
+
+### 1. encode: Buffer reuse [#nodejs-1-encode-buffer-reuse]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| Native         | 2,953,203 ops/sec  | 0.0003386 ms  | —            |
+| FastUtf8       | 11,022,335 ops/sec | 0.00009072 ms | 3.73x faster |
+
+### 2. encode: Cache Hit [#nodejs-2-encode-cache-hit]
+
+| Implementation | Throughput         | Mean          | Comparison    |
+| -------------- | ------------------ | ------------- | ------------- |
+| Native         | 2,256,874 ops/sec  | 0.0004431 ms  | —             |
+| FastUtf8       | 22,750,724 ops/sec | 0.00004395 ms | 10.08x faster |
+
+### 3. encode: No Buffer [#nodejs-3-encode-no-buffer]
+
+| Implementation | Throughput      | Mean        | Comparison   |
+| -------------- | --------------- | ----------- | ------------ |
+| Native         | 185,656 ops/sec | 0.005386 ms | 1.01x faster |
+| FastUtf8       | 184,030 ops/sec | 0.005434 ms | —            |
+
+### 4. decode [#nodejs-4-decode]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 5,558,839 ops/sec | 0.0001799 ms | —            |
+| FastUtf8       | 5,755,558 ops/sec | 0.0001737 ms | 1.04x faster |
+
+### 5. isValidUtf8 [#nodejs-5-isvalidutf8]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| String         | 38,881,329 ops/sec | 0.00002572 ms | 7.25x faster |
+| Bytes          | 5,363,716 ops/sec  | 0.0001864 ms  | —            |
+
+## Chromium [#chromium]
+
+### 1. encode: Buffer reuse [#chromium-1-encode-buffer-reuse]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 1,119,056 ops/sec | 0.0008936 ms | —            |
+| FastUtf8       | 3,517,800 ops/sec | 0.0002843 ms | 3.14x faster |
+
+### 2. encode: Cache Hit [#chromium-2-encode-cache-hit]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 1,019,834 ops/sec | 0.0009806 ms | —            |
+| FastUtf8       | 7,330,528 ops/sec | 0.0001364 ms | 7.19x faster |
+
+### 3. encode: No Buffer [#chromium-3-encode-no-buffer]
+
+| Implementation | Throughput      | Mean        | Comparison   |
+| -------------- | --------------- | ----------- | ------------ |
+| Native         | 161,552 ops/sec | 0.006190 ms | 1.01x faster |
+| FastUtf8       | 160,416 ops/sec | 0.006234 ms | —            |
+
+### 4. decode [#chromium-4-decode]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 4,306,210 ops/sec | 0.0002322 ms | 1.03x faster |
+| FastUtf8       | 4,172,188 ops/sec | 0.0002397 ms | —            |
+
+### 5. isValidUtf8 [#chromium-5-isvalidutf8]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| String         | 10,882,879 ops/sec | 0.00009189 ms | 2.58x faster |
+| Bytes          | 4,214,071 ops/sec  | 0.0002373 ms  | —            |
+
+## Firefox [#firefox]
+
+### 1. encode: Buffer reuse [#firefox-1-encode-buffer-reuse]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 8,872,942 ops/sec | 0.0001127 ms | 2.42x faster |
+| FastUtf8       | 3,666,552 ops/sec | 0.0002727 ms | —            |
+
+### 2. encode: Cache Hit [#firefox-2-encode-cache-hit]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| Native         | 8,622,086 ops/sec  | 0.0001160 ms  | —            |
+| FastUtf8       | 10,471,988 ops/sec | 0.00009549 ms | 1.21x faster |
+
+### 3. encode: No Buffer [#firefox-3-encode-no-buffer]
+
+| Implementation | Throughput      | Mean        | Comparison   |
+| -------------- | --------------- | ----------- | ------------ |
+| Native         | 266,580 ops/sec | 0.003751 ms | 1.07x faster |
+| FastUtf8       | 249,782 ops/sec | 0.004003 ms | —            |
+
+### 4. decode [#firefox-4-decode]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 6,098,428 ops/sec | 0.0001640 ms | —            |
+| FastUtf8       | 6,130,510 ops/sec | 0.0001631 ms | 1.01x faster |
+
+### 5. isValidUtf8 [#firefox-5-isvalidutf8]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| String         | 20,943,804 ops/sec | 0.00004775 ms | 3.46x faster |
+| Bytes          | 6,055,828 ops/sec  | 0.0001651 ms  | —            |
+
+## WebKit [#webkit]
+
+### 1. encode: Buffer reuse [#webkit-1-encode-buffer-reuse]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 4,373,600 ops/sec | 0.0002286 ms | —            |
+| FastUtf8       | 5,317,926 ops/sec | 0.0001880 ms | 1.22x faster |
+
+### 2. encode: Cache Hit [#webkit-2-encode-cache-hit]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| Native         | 4,648,590 ops/sec  | 0.0002151 ms  | —            |
+| FastUtf8       | 17,116,706 ops/sec | 0.00005842 ms | 3.68x faster |
+
+### 3. encode: No Buffer [#webkit-3-encode-no-buffer]
+
+| Implementation | Throughput      | Mean        | Comparison   |
+| -------------- | --------------- | ----------- | ------------ |
+| Native         | 308,056 ops/sec | 0.003246 ms | —            |
+| FastUtf8       | 332,802 ops/sec | 0.003005 ms | 1.08x faster |
+
+### 4. decode [#webkit-4-decode]
+
+| Implementation | Throughput        | Mean         | Comparison   |
+| -------------- | ----------------- | ------------ | ------------ |
+| Native         | 5,002,676 ops/sec | 0.0001999 ms | —            |
+| FastUtf8       | 5,355,078 ops/sec | 0.0001867 ms | 1.07x faster |
+
+### 5. isValidUtf8 [#webkit-5-isvalidutf8]
+
+| Implementation | Throughput         | Mean          | Comparison   |
+| -------------- | ------------------ | ------------- | ------------ |
+| String         | 25,472,924 ops/sec | 0.00003926 ms | 5.04x faster |
+| Bytes          | 5,057,298 ops/sec  | 0.0001977 ms  | —            |

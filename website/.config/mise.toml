@@ -7,5 +7,15 @@ run = "set -e; cp ./.config/.oxlintrc.json ./.tmp-oxlintrc.json; trap 'rm -f ./.
 [tasks.dev]
 run = "npx blume dev"
 
+[tasks.benchmark]
+description = "最新のベンチマーク結果を content/*/benchmark/index.mdx に書き込みます。"
+run = [
+  "node ./scripts/update-benchmark.ts",
+  {
+    task = "format",
+    args = ["content/ja/benchmark/index.mdx", "content/en/benchmark/index.mdx"],
+  },
+]
+
 [tasks.update]
 run = ["npx npm-check-updates --target minor -u --cooldown 7"]

@@ -1,5 +1,5 @@
 import { defineMeta } from "blume";
 
 export default defineMeta({
-  pages: ["getting-started", "guides", "api"],
+  pages: ["getting-started", "guides", "api", "benchmark"],
 });
