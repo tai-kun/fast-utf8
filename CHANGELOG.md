@@ -1,5 +1,17 @@
 # Changelog
 
+## fast-utf8@0.0.9
+
+### ドキュメント
+
+- ベンチマーク結果を記載 ([06f493f](https://github.com/tai-kun/fast-utf8/commit/06f493fe168d1ae1c0512baef1e6dcb46eafdb89))
+
+### ビルド・CI
+
+- 修正 ([d024aba](https://github.com/tai-kun/fast-utf8/commit/d024abaeafd9270935517d5f15e68da352515ba9))
+
+**Full Changelog**: https://github.com/tai-kun/fast-utf8/compare/fast-utf8@0.0.8...fast-utf8@0.0.9
+
 ## fast-utf8@0.0.8
 
 ### 新機能
